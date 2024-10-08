@@ -1,0 +1,913 @@
+/* CSS Variables for Colors and Styling */
+:root {
+  --color-dark-purple: #5e338f;
+  --color-vivid-purple: #9D00FF;
+  --color-light-pink: #FFC0CB;
+  --color-soft-purple: #7a4dad;
+  --color-bright-blue: #4BD7FF;
+  --color-orange: #FF7400;
+  --color-white: #FFFFFF;
+  --color-bright-pink: #e91e63;
+  --color-light-gray: #DADADA;
+  --color-vibrant-blue: #0000FF;
+  --color-border-gray: #bdbdbd;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-size-base: 16px;
+  --font-size-large: 28px;
+  --border-radius: 8px;
+  --transition-speed: 0.3s;
+  --max-form-width: 1200px;
+  --input-height: 3rem;
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--color-dark-purple);
+  color: var(--color-white);
+  font-size: var(--font-size-base);
+}
+
+/* Header Styles */
+header, nav, main, footer {
+  padding: 1.5rem 15%;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: var(--color-soft-purple);
+  border-bottom: 2px solid var(--color-vivid-purple);
+}
+
+.footer {
+  background-color: var(--color-dark-purple);
+  border-top: 2px solid var(--color-vivid-purple);
+}
+
+.footer nav a {
+  color: #FFA3B3;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color var(--transition-speed);
+}
+
+.footer nav a:hover {
+  color: var(--color-light-pink);
+}
+
+.header-left {
+  max-width: 70%;
+}
+
+header h1 {
+  margin: 0;
+  font-size: var(--font-size-large);
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+header p {
+  margin: 0.5rem 0;
+  color: var(--color-light-gray);
+  font-size: 14px;
+}
+
+.address-link {
+  color: #ff4081;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+}
+
+.address-link:hover {
+  color: #f50057;
+  text-decoration: underline;
+}
+
+.address-link::after {
+  content: attr(title);
+  position: absolute;
+  left: -9999px;
+  overflow: hidden;
+}
+
+.network-name {
+  font-size: 16px;
+}
+
+.wallet-info {
+  margin-top: 30px;
+}
+
+/* Aavegotchi Info Styles */
+.aavegotchi-info {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: var(--color-dark-purple);
+  border: 2px solid var(--color-vivid-purple);
+  border-radius: var(--border-radius);
+  color: #edf2f7;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.aavegotchi-info h2 {
+  margin-top: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.aavegotchi-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.aavegotchi-table th,
+.aavegotchi-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #4a5568;
+  font-size: 16px;
+  font-weight: 400;
+  word-break: break-word;
+}
+
+.aavegotchi-table th {
+  background-color: #7a4dad;
+  color: #ffc0cb;
+}
+
+.aavegotchi-table td {
+  vertical-align: middle;
+}
+
+.aavegotchi-table td a {
+  color: #ff4081;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+  word-break: break-word;
+}
+
+.aavegotchi-table td a:hover {
+  color: #f50057;
+  text-decoration: underline;
+}
+
+.aavegotchi-table td .copy-button {
+  margin-left: 2px;
+}
+
+/* New Styles for Owned/Rented Status */
+.status-owned {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.status-rented {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Navigation Styles */
+nav {
+  background-color: var(--color-dark-purple);
+  border-bottom: 1px solid var(--color-vivid-purple);
+  margin-top: 1rem;
+  border-radius: var(--border-radius);
+}
+
+nav a {
+  color: #FFA3B3;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color var(--transition-speed);
+}
+
+a, a:visited {
+  color: #FFA3B3;
+}
+
+a:hover {
+  color: var(--color-light-pink);
+}
+
+/* Button Styles */
+.button {
+  background: linear-gradient(135deg, var(--color-bright-pink), var(--color-vivid-purple));
+  color: var(--color-white);
+  padding: 10px 30px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 16px;
+  transition: background var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.button:hover {
+  background: linear-gradient(135deg, var(--color-vivid-purple), var(--color-bright-pink));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Max Button Styles */
+.max-button {
+  background: none;
+  border: none;
+  color: #ff4081;
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  transition: color var(--transition-speed), background-color var(--transition-speed);
+  border-radius: var(--border-radius);
+}
+
+.max-button:hover {
+  color: var(--color-bright-pink);
+  background-color: rgba(233, 30, 99, 0.2);
+}
+
+.max-button:focus {
+  outline: none;
+}
+
+/* Copy Button Styles */
+.copy-button {
+  background: none;
+  border: none;
+  color: #FFC0CB;
+  cursor: pointer;
+  margin-left: 5px;
+  font-size: 20px;
+  transition: color var(--transition-speed);
+  padding: 5px;
+  position: relative;
+}
+
+.copy-button:hover {
+  color: #FFC0CB;
+}
+
+.copy-button:focus {
+  outline: none;
+}
+
+.copy-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1c0124;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-speed);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.copy-button:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* New Styles for Rarity Farming Emoji */
+.rarity-farming-button {
+  background: none;
+  border: none;
+  color: #FFD700;
+  cursor: pointer;
+  margin-left: 0px;
+  font-size: 20px;
+  transition: color var(--transition-speed);
+  padding: 5px;
+  position: relative;
+}
+
+.rarity-farming-button:hover {
+  color: #FFD700;
+}
+
+.rarity-farming-button:focus {
+  outline: none;
+}
+
+.rarity-farming-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1c0124;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-speed);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.rarity-farming-button:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Form Wrapper */
+.form-wrapper {
+  max-width: var(--max-form-width);
+  margin: 30px auto;
+  padding: 15px;
+}
+
+/* Form Styles */
+.select, .input, .textarea {
+  width: 100%;
+  padding: 15px;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+  background-color: var(--color-dark-purple);
+  color: var(--color-white);
+  border: 2px solid var(--color-border-gray);
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.select:hover, .input:hover, .textarea:hover {
+  border-color: var(--color-bright-pink);
+}
+
+.select:focus, .input:focus, .textarea:focus {
+  outline: none;
+  border-color: #ff4081;
+  box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--color-light-pink);
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 16px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+/* Form Container */
+.form-container {
+  background-color: var(--color-soft-purple);
+  padding: 20px;
+  border: 2px solid var(--color-vivid-purple);
+  border-radius: var(--border-radius);
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-speed);
+}
+
+.form-container h3 {
+  margin-top: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-white);
+  margin-bottom: 20px;
+}
+
+/* Inner Form Container for Extra Tools */
+.form-container-inner {
+  background-color: var(--color-soft-purple);
+  padding: 15px;
+  border: 1px solid var(--color-vivid-purple);
+  border-radius: var(--border-radius);
+  margin-bottom: 20px;
+}
+
+/* Submit Button Styles */
+.button.submit-button {
+  background: linear-gradient(135deg, var(--color-bright-pink), var(--color-vivid-purple));
+  padding: 15px 40px;
+  font-size: 16px;
+  border-radius: 6px;
+}
+
+.button.submit-button:hover {
+  background: linear-gradient(135deg, var(--color-vivid-purple), var(--color-bright-pink));
+}
+
+/* Alert Styles */
+.alert {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: bold;
+}
+
+.alert-success {
+  background-color: #28a745;
+  color: var(--color-white);
+}
+
+.alert-error {
+  background-color: #dc3545;
+  color: var(--color-white);
+}
+
+/* Collapsible Header Styles */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.form-header h3 {
+  margin: 0;
+  color: var(--color-white);
+}
+
+.toggle-icon {
+  transition: transform var(--transition-speed);
+}
+
+.toggle-icon.collapsed {
+  transform: rotate(0deg);
+}
+
+.toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.collapsible-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition-speed) ease-out;
+}
+
+.collapsible-content.expanded {
+  max-height: 1000px;
+  transition: max-height var(--transition-speed) ease-in;
+}
+
+.form-header:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--color-soft-purple);
+  padding: 20px;
+  border-radius: var(--border-radius);
+  max-width: 80%;
+  max-height: 80%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.centered-content {
+  text-align: center;
+}
+
+.centered-table {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 500px;
+}
+
+.centered-button {
+  margin-top: 20px;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.modal-content .instruction {
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.modal-form .form-group {
+  margin-bottom: 15px;
+}
+
+.modal-form .input {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-content p {
+  margin-bottom: 15px;
+}
+
+.modal-form .button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.deposit-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.deposit-table th,
+.deposit-table td {
+  border: 1px solid var(--color-border-gray);
+  padding: 8px;
+  text-align: left;
+}
+
+.deposit-table th {
+  background-color: var(--color-dark-purple);
+  color: var(--color-white);
+}
+
+.deposit-table a {
+  color: var(--color-white);
+  text-decoration: none;
+}
+
+.deposit-table a:hover {
+  color: #ff4081;
+  text-decoration: underline;
+}
+
+/* Modal Form Styles */
+
+/* Total Display Styles */
+.total-display {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.total-display.correct {
+  color: green;
+}
+
+.total-display.incorrect {
+  color: red;
+}
+
+/* Instruction Message Styles */
+.instruction {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #FFF;
+}
+
+/* Additional Modal Form Styles */
+.modal-form .input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-form .form-group label {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.modal-form .button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-form .error-message {
+  font-size: 14px;
+  color: red;
+  margin-top: 10px;
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 1024px) {
+  header, nav, main, footer {
+    padding: 1rem 5%;
+  }
+  
+  .header-left {
+    max-width: 70%;
+  }
+  
+  nav a {
+    margin-right: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+  
+  .form-wrapper {
+    padding: 0.5rem;
+  }
+
+  .aavegotchi-info {
+    padding: 15px;
+    max-height: 300px;
+  }
+
+  .aavegotchi-table th,
+  .aavegotchi-table td {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-wrap: nowrap;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .header-left {
+    max-width: 70%;
+    order: 1;
+  }
+
+  #connect-wallet {
+    order: 2;
+    margin-left: auto;
+    align-self: flex-start;
+  }
+
+  nav a {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-container {
+    padding: 15px;
+  }
+
+  .form-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .button.submit-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 1rem;
+  }
+
+  header h1 {
+    font-size: 24px;
+  }
+
+  .aavegotchi-info h2 {
+    font-size: 20px;
+  }
+
+  .form-container h3 {
+    font-size: 20px;
+  }
+
+  .form-group label,
+  .select,
+  .input,
+  .textarea,
+  .aavegotchi-table th,
+  .aavegotchi-table td {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  header, nav, main, footer {
+    padding: 1rem 2%;
+  }
+
+  .header-left {
+    max-width: 100%;
+  }
+
+  header h1 {
+    font-size: 20px;
+  }
+
+  .form-header h3 {
+    font-size: 16px;
+  }
+
+  .aavegotchi-info {
+    max-height: 300px;
+    padding: 15px;
+    overflow-x: auto;
+  }
+
+  .aavegotchi-table {
+    width: 600px; /* Set a fixed width for horizontal scrolling */
+  }
+
+  .aavegotchi-table th,
+  .aavegotchi-table td {
+    padding: 5px;
+    font-size: 12px;
+  }
+
+  /* Ensure the table remains intact */
+  .aavegotchi-table thead {
+    display: table-header-group;
+  }
+
+  .aavegotchi-table tr {
+    display: table-row;
+  }
+
+  .aavegotchi-table th,
+  .aavegotchi-table td {
+    display: table-cell;
+  }
+}
+
+/* Additional Styles for Add Your Own Token */
+#custom-erc20-address {
+  display: none;
+}
+
+/* Modal Form Styles */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-form .button.submit-button {
+  background: linear-gradient(135deg, var(--color-bright-pink), var(--color-vivid-purple));
+}
+
+.modal-form .button.submit-button:hover {
+  background: linear-gradient(135deg, var(--color-vivid-purple), var(--color-bright-pink));
+}
+
+/* Toast Styles */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+}
+
+.toast {
+  min-width: 250px;
+  margin-bottom: 10px;
+  padding: 15px 20px;
+  border-radius: var(--border-radius);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+.toast-success {
+  background-color: #28a745; /* Green */
+}
+
+.toast-error {
+  background-color: #dc3545; /* Red */
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--color-white);
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 15px;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeout {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Token Image Styles */
+.token-balance {
+  display: flex;
+  align-items: center;
+}
+
+.token-balance img {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  vertical-align: middle;
+  border-radius: 50%;
+}
+
+/* Styles for Rarity Farming Deposits */
+.deposit-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.deposit-list li {
+  margin-bottom: 5px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--color-soft-purple);
+  padding: 20px;
+  border-radius: var(--border-radius);
+  max-width: 80%;
+  max-height: 80%;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-content .button {
+  margin-top: 20px;
+}

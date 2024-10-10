@@ -440,32 +440,32 @@ export function generateMethodForm(method, methodName) {
         }
       });
 
-      customInput.addEventListener('input', debounce(async (e) => {
-        const address = e.target.value.trim();
-        if (address === '' || address.length < 42) {
-          // Reset to default GHST token
-          selectedERC20Address = ghstContractAddress;
-          selectedERC20Symbol = 'GHST';
-          selectedERC20Decimals = 18;
-        } else {
-          const formattedAddress = validateAndFormatERC20Address(address);
-          if (formattedAddress) {
-            try {
-              await updateSelectedERC20Token(formattedAddress);
-            } catch (error) {
-              console.error('Error updating ERC20 token:', error);
-              showToast('Invalid ERC20 token address.', 'error');
-            }
-          } else {
-            showToast('Invalid ERC20 address format.', 'error');
-          }
-        }
+customInput.addEventListener('input', debounce(async (e) => {
+  const address = e.target.value.trim();
+  if (address === '' || address.length < 42) {
+    // Reset to default GHST token
+    selectedERC20Address = ghstContractAddress;
+    selectedERC20Symbol = 'GHST';
+    selectedERC20Decimals = 18;
+  } else {
+    const formattedAddress = validateAndFormatERC20Address(address);
+    if (formattedAddress) {
+      try {
+        await updateSelectedERC20Token(formattedAddress);
+      } catch (error) {
+        console.error('Error updating ERC20 token:', error);
+        showToast('Invalid ERC20 token address.', 'error');
+      }
+    } else {
+      showToast('Invalid ERC20 address format.', 'error');
+    }
+  }
 
-        // Update table header
-        const tableHeader = document.querySelector('.aavegotchi-table th:nth-child(4)');
-        if (tableHeader) {
-          tableHeader.innerText = `${selectedERC20Symbol} Balance`;
-        }
+  // Update table header
+  const tableHeader = document.querySelector('.aavegotchi-table th:nth-child(4)');
+  if (tableHeader) {
+    tableHeader.innerText = `${selectedERC20Symbol} Balance`;
+  }
 
         // Refresh table balances
         await refreshTableBalances();

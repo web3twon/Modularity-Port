@@ -1,5 +1,10 @@
 // wallet.js
 
+import { initializeContracts } from './contracts.js';
+import { fetchAndDisplayAavegotchis } from './ui.js';
+import { generateMethodForms } from './app.js';
+import { showToast } from './utils.js';
+
 let provider;
 let signer;
 let userAddress;
@@ -117,5 +122,16 @@ function cleanupEventListeners() {
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
+// Export the functions that need to be used in other files
+export {
+  connectWallet,
+  provider,
+  signer,
+  userAddress,
+  handleAccountsChanged,
+  handleChainChanged,
+  resetWalletConnection
+};
 
 console.log('wallet.js loaded');

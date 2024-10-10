@@ -1,8 +1,10 @@
 // contracts.js
 
-// Import ABIs
-import ghstABI from './abis/ghstABI.json' assert { type: 'json' };
-import combinedABI from './abis/combinedABI.json' assert { type: 'json' };
+// We'll use fetch to load the JSON files
+async function loadABI(url) {
+  const response = await fetch(url);
+  return response.json();
+}
 
 // Contract Information
 const contractAddress = '0x86935F11C86623deC8a25696E1C19a8659CbF95d';
@@ -10,6 +12,8 @@ const ghstContractAddress = '0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7';
 
 let contract;
 let ghstContract;
+let ghstABI;
+let combinedABI;
 
 // Predefined ERC20 Tokens
 const predefinedTokens = [
@@ -28,6 +32,10 @@ let selectedERC20Decimals = 18;
 // Function to Initialize Contracts
 async function initializeContracts() {
   try {
+    // Load ABIs
+    ghstABI = await loadABI('./src/js/abis/ghstABI.json');
+    combinedABI = await loadABI('./src/js/abis/combinedABI.json');
+
     contract = new ethers.Contract(contractAddress, combinedABI, signer);
     ghstContract = new ethers.Contract(ghstContractAddress, ghstABI, provider);
     showToast('Contracts initialized successfully.', 'success');
@@ -37,7 +45,6 @@ async function initializeContracts() {
     throw error;
   }
 }
-
 
 // Function to Update Selected ERC20 Token
 async function updateSelectedERC20Token(address) {
@@ -116,5 +123,19 @@ function validateAndFormatERC20Address(input) {
   }
   return null;
 }
+
+// Export the functions and variables that need to be used in other files
+export {
+  initializeContracts,
+  contract,
+  ghstContract,
+  predefinedTokens,
+  selectedERC20Address,
+  selectedERC20Symbol,
+  selectedERC20Decimals,
+  updateSelectedERC20Token,
+  refreshTableBalances,
+  validateAndFormatERC20Address
+};
 
 console.log('contracts.js loaded');

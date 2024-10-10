@@ -1,5 +1,9 @@
 // app.js
 
+import { connectWallet } from './wallet.js';
+import { showToast } from './utils.js';
+import { contract, selectedERC20Address, selectedERC20Symbol, selectedERC20Decimals } from './contracts.js';
+
 // Global Variables
 let ownedAavegotchis = [];
 let escrowBalances = {};
@@ -23,7 +27,7 @@ async function init() {
 }
 
 // Function to Generate Method Forms
-async function generateMethodForms() {
+export async function generateMethodForms() {
   methodFormsContainer.innerHTML = '';
   if (!contract) {
     methodFormsContainer.innerHTML = '<p>Please connect your wallet to interact with the contract.</p>';
@@ -111,6 +115,8 @@ function generateExtraTools(facetMethods, extraMethodNames) {
     extraToolsContainer.appendChild(collapsibleContent);
     methodFormsContainer.appendChild(extraToolsContainer);
     toggleCollapse(collapsibleContent, extraToolsContainer.querySelector('.toggle-icon'), false);
+
+// ... (previous code remains the same)
 
     extraToolsHeader.addEventListener('click', () => {
       const isExpanded = collapsibleContent.classList.contains('expanded');
@@ -373,7 +379,7 @@ async function getUserSpecifiedAmounts(_tokenIds, individualBalances, totalTrans
 
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
-	    cancelButton.className = 'button';
+    cancelButton.className = 'button';
     cancelButton.innerText = 'Cancel';
 
     buttonContainer.appendChild(submitButton);
@@ -488,5 +494,14 @@ function handleError(error) {
 
 // Initial call to generate method forms if the wallet is already connected
 window.onload = init;
+
+// Export functions that need to be used in other files
+export {
+  generateMethodForms,
+  handleFormSubmit,
+  getUserSpecifiedAmounts,
+  toggleCollapse,
+  handleError
+};
 
 console.log('app.js loaded');

@@ -1,5 +1,9 @@
 // contracts.js
 
+// Import ABIs
+import ghstABI from './abis/ghstABI.json' assert { type: 'json' };
+import combinedABI from './abis/combinedABI.json' assert { type: 'json' };
+
 // Contract Information
 const contractAddress = '0x86935F11C86623deC8a25696E1C19a8659CbF95d';
 const ghstContractAddress = '0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7';
@@ -33,6 +37,7 @@ async function initializeContracts() {
     throw error;
   }
 }
+
 
 // Function to Update Selected ERC20 Token
 async function updateSelectedERC20Token(address) {

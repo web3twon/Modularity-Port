@@ -2,7 +2,7 @@
 
 import { showToast, memoizedGetTokenImageUrl } from './utils.js';
 import { contract, ghstABI, provider, selectedERC20Address, selectedERC20Symbol, selectedERC20Decimals } from './contracts.js';
-import { ethers } from 'ethers';
+import { ethers } from './ethers';
 
 let ownedAavegotchis = [];
 let escrowBalances = {};

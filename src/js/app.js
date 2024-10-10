@@ -27,7 +27,7 @@ async function init() {
 }
 
 // Function to Generate Method Forms
-export async function generateMethodForms() {
+async function generateMethodForms() {
   methodFormsContainer.innerHTML = '';
   if (!contract) {
     methodFormsContainer.innerHTML = '<p>Please connect your wallet to interact with the contract.</p>';

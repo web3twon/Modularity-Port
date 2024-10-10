@@ -1,9 +1,10 @@
 // ui.js
 
 import { showToast, memoizedGetTokenImageUrl } from './utils.js';
-import { contract, ghstABI, provider, selectedERC20Address, selectedERC20Symbol, selectedERC20Decimals } from './contracts.js';
-import { ethers } from 'ethers';
+import { contract, ghstABI, predefinedTokens, selectedERC20Address, selectedERC20Symbol, selectedERC20Decimals } from './contracts.js';
 import { fetchRarityFarmingDeposits } from './apis.js';
+
+// We're assuming ethers is loaded globally via a script tag in the HTML file
 
 let ownedAavegotchis = [];
 let escrowBalances = {};
@@ -19,7 +20,7 @@ export async function fetchAndDisplayAavegotchis(ownerAddress) {
       return;
     }
 
-    const tokenContract = new ethers.Contract(selectedERC20Address, ghstABI, provider);
+    const tokenContract = new ethers.Contract(selectedERC20Address, ghstABI, window.provider);
     const tokenDecimals = selectedERC20Decimals;
     const tokenSymbol = selectedERC20Symbol;
 
@@ -259,9 +260,9 @@ export async function updateMaxButton(form) {
 
   try {
     let totalBalance = 0n;
-    const tokenContract = new ethers.Contract(erc20Address, ghstABI, provider);
+    const tokenContract = new ethers.Contract(erc20Address, ghstABI, window.provider);
 
-    if (tokenIdValue === 'all') {
+if (tokenIdValue === 'all') {
       const balancePromises = ownedAavegotchis.map(gotchi => tokenContract.balanceOf(gotchi.escrow));
       const balances = await Promise.all(balancePromises);
       const filteredBalances = balances.filter(balance => balance > 0n);
@@ -308,12 +309,209 @@ export async function handleMaxButtonClick(form) {
       erc20Address = customErc20Input ? customErc20Input.value : null;
     }
 
-    const tokenContract = new ethers.Contract(erc20Address, ghstABI, provider);
+    const tokenContract = new ethers.Contract(erc20Address, ghstABI, window.provider);
     const decimals = await tokenContract.decimals();
 
     const formattedValue = ethers.formatUnits(maxValue, decimals);
     amountInput.value = formattedValue;
   }
+}
+
+// Function to generate method form
+export function generateMethodForm(method, methodName) {
+  const formContainer = document.createElement('div');
+  formContainer.className = 'form-container';
+
+  const formHeader = document.createElement('div');
+  formHeader.className = 'form-header';
+
+  const formTitle = document.createElement('h3');
+  formTitle.innerText = methodName === 'transferEscrow' ? 'Withdraw (TransferEscrow)' : methodName;
+  formHeader.appendChild(formTitle);
+  formContainer.appendChild(formHeader);
+
+  const form = document.createElement('form');
+  form.setAttribute('data-method', methodName);
+  form.addEventListener('submit', handleFormSubmit);
+
+  method.inputs.forEach(input => {
+    const formGroup = document.createElement('div');
+    formGroup.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.setAttribute('for', input.name);
+
+    if (methodName === 'transferEscrow') {
+      if (input.name === '_tokenId') {
+        label.innerText = 'Select Aavegotchi:';
+      } else if (input.name === '_erc20Contract') {
+        label.innerText = 'ERC20 Contract Address:';
+      } else if (input.name === '_transferAmount') {
+        label.innerText = 'Withdraw Amount:';
+
+        const maxButton = document.createElement('button');
+        maxButton.type = 'button';
+        maxButton.className = 'max-button';
+        maxButton.innerText = 'Max';
+        maxButton.addEventListener('click', () => handleMaxButtonClick(form));
+        label.appendChild(maxButton);
+      } else {
+        label.innerText = `${input.name} (${input.type}):`;
+      }
+    } else {
+      label.innerText = `${input.name} (${input.type}):`;
+    }
+
+    formGroup.appendChild(label);
+
+    let inputElement;
+    if (input.name === '_tokenId') {
+      inputElement = document.createElement('select');
+      inputElement.className = 'select';
+      inputElement.id = input.name;
+      inputElement.name = input.name;
+
+      if (ownedAavegotchis.length > 1) {
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.innerText = 'All Owned Aavegotchis';
+        inputElement.appendChild(allOption);
+      }
+
+      for (const aavegotchi of ownedAavegotchis) {
+        const option = document.createElement('option');
+        option.value = aavegotchi.tokenId.toString();
+        const name = aavegotchi.name && aavegotchi.name.trim() !== '' ? aavegotchi.name : '(No Name)';
+        option.innerText = `Aavegotchi ID ${aavegotchi.tokenId} (${name})`;
+        inputElement.appendChild(option);
+      }
+
+      if (ownedAavegotchis.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.innerText = 'No owned Aavegotchis available';
+        inputElement.appendChild(option);
+        inputElement.disabled = true;
+      }
+
+      formGroup.appendChild(inputElement);
+      inputElement.addEventListener('change', () => updateMaxButton(form));
+    } else if (methodName === 'transferEscrow' && input.name === '_erc20Contract') {
+      inputElement = document.createElement('select');
+      inputElement.className = 'select';
+      inputElement.id = input.name;
+      inputElement.name = input.name;
+
+      for (const token of predefinedTokens) {
+        const option = document.createElement('option');
+        option.value = token.address;
+        option.innerText = token.name;
+        inputElement.appendChild(option);
+      }
+
+      const customOption = document.createElement('option');
+      customOption.value = 'custom';
+      customOption.innerText = 'Add Your Own Token';
+      inputElement.appendChild(customOption);
+
+      formGroup.appendChild(inputElement);
+
+      const customInput = document.createElement('input');
+      customInput.type = 'text';
+      customInput.className = 'input';
+      customInput.id = 'custom-erc20-address';
+      customInput.name = 'custom-erc20-address';
+      customInput.placeholder = '0x...';
+      customInput.style.display = 'none';
+      formGroup.appendChild(customInput);
+
+      inputElement.addEventListener('change', async (e) => {
+        const isCustom = e.target.value === 'custom';
+        customInput.style.display = isCustom ? 'block' : 'none';
+        
+        if (!isCustom) {
+          customInput.value = ''; // Clear the custom input field
+        }
+
+        await updateMaxButton(form);
+
+        if (!isCustom) {
+          await updateSelectedERC20Token(e.target.value);
+        }
+      });
+
+      customInput.addEventListener('input', debounce(async (e) => {
+        const address = e.target.value.trim();
+        if (address === '' || address.length < 42) {
+          // Reset to default GHST token
+          selectedERC20Address = ghstContractAddress;
+          selectedERC20Symbol = 'GHST';
+          selectedERC20Decimals = 18;
+        } else {
+          const formattedAddress = validateAndFormatERC20Address(address);
+          if (formattedAddress) {
+            try {
+              await updateSelectedERC20Token(formattedAddress);
+            } catch (error) {
+              console.error('Error updating ERC20 token:', error);
+              showToast('Invalid ERC20 token address.', 'error');
+            }
+          } else {
+            showToast('Invalid ERC20 address format.', 'error');
+          }
+        }
+
+        // Update table header
+        const tableHeader = document.querySelector('.aavegotchi-table th:nth-child(4)');
+        if (tableHeader) {
+          tableHeader.innerText = `${selectedERC20Symbol} Balance`;
+        }
+
+        // Refresh table balances
+        await refreshTableBalances();
+      }, 500));
+
+      await updateSelectedERC20Token(inputElement.value);
+    } else if (input.name === '_transferAmount') {
+      inputElement = document.createElement('input');
+      inputElement.type = 'text';
+      inputElement.className = 'input';
+      inputElement.id = input.name;
+      inputElement.name = input.name;
+      formGroup.appendChild(inputElement);
+    } else {
+      if (input.type.endsWith('[]')) {
+        inputElement = document.createElement('textarea');
+        inputElement.className = 'textarea';
+        inputElement.placeholder = 'Enter comma-separated values';
+      } else {
+        inputElement = document.createElement('input');
+        inputElement.type = 'text';
+        inputElement.className = 'input';
+        if (input.type.startsWith('address')) {
+          inputElement.placeholder = '0x...';
+        }
+      }
+
+      inputElement.id = input.name;
+      inputElement.name = input.name;
+      formGroup.appendChild(inputElement);
+    }
+
+    form.appendChild(formGroup);
+  });
+
+  const submitButton = document.createElement('button');
+  submitButton.type = 'submit';
+  submitButton.className = 'button submit-button';
+  submitButton.innerText = 'Submit';
+  form.appendChild(submitButton);
+
+  formContainer.appendChild(form);
+  methodFormsContainer.appendChild(formContainer);
+
+  form.addEventListener('change', () => updateMaxButton(form));
+  updateMaxButton(form);
 }
 
 console.log('ui.js loaded');

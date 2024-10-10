@@ -116,8 +116,6 @@ function generateExtraTools(facetMethods, extraMethodNames) {
     methodFormsContainer.appendChild(extraToolsContainer);
     toggleCollapse(collapsibleContent, extraToolsContainer.querySelector('.toggle-icon'), false);
 
-// ... (previous code remains the same)
-
     extraToolsHeader.addEventListener('click', () => {
       const isExpanded = collapsibleContent.classList.contains('expanded');
       toggleCollapse(collapsibleContent, extraToolsContainer.querySelector('.toggle-icon'), !isExpanded);
@@ -374,7 +372,7 @@ async function getUserSpecifiedAmounts(_tokenIds, individualBalances, totalTrans
 
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
-    submitButton.className = 'button submit-button';
+    submitButton.submitButton.className = 'button submit-button';
     submitButton.innerText = 'Confirm';
 
     const cancelButton = document.createElement('button');

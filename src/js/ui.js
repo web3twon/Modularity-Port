@@ -2,7 +2,8 @@
 
 import { showToast, memoizedGetTokenImageUrl } from './utils.js';
 import { contract, ghstABI, provider, selectedERC20Address, selectedERC20Symbol, selectedERC20Decimals } from './contracts.js';
-import { ethers } from './ethers';
+import { ethers } from 'ethers';
+import { fetchRarityFarmingDeposits } from './apis.js';
 
 let ownedAavegotchis = [];
 let escrowBalances = {};
@@ -229,6 +230,90 @@ export function showDeposits(deposits, tokenId, name) {
   modalContent.appendChild(fragment);
   modalOverlay.appendChild(modalContent);
   document.body.appendChild(modalOverlay);
+}
+
+// Function to Update Max Button
+export async function updateMaxButton(form) {
+  const tokenIdSelect = form.querySelector('select[name="_tokenId"]');
+  const erc20ContractSelect = form.querySelector('select[name="_erc20Contract"]');
+  const customErc20Input = form.querySelector('input[name="custom-erc20-address"]');
+
+  const tokenIdValue = tokenIdSelect ? tokenIdSelect.value : null;
+  let erc20Address = erc20ContractSelect ? erc20ContractSelect.value : null;
+
+  if (erc20Address === 'custom') {
+    erc20Address = customErc20Input ? customErc20Input.value : null;
+  }
+
+  if (!erc20Address || !ethers.isAddress(erc20Address)) {
+    return;
+  }
+
+  const amountInput = form.querySelector('input[name="_transferAmount"]');
+  const maxButton = form.querySelector('.max-button');
+
+  if (!tokenIdValue || !amountInput || !maxButton) return;
+
+  maxButton.disabled = true;
+  maxButton.innerText = 'Loading...';
+
+  try {
+    let totalBalance = 0n;
+    const tokenContract = new ethers.Contract(erc20Address, ghstABI, provider);
+
+    if (tokenIdValue === 'all') {
+      const balancePromises = ownedAavegotchis.map(gotchi => tokenContract.balanceOf(gotchi.escrow));
+      const balances = await Promise.all(balancePromises);
+      const filteredBalances = balances.filter(balance => balance > 0n);
+
+      if (filteredBalances.length === 0) {
+        maxButton.disabled = true;
+        maxButton.innerText = 'Max';
+        showToast('None of your Aavegotchis hold the selected token.', 'error');
+        return;
+      }
+
+      totalBalance = filteredBalances.reduce((acc, balance) => acc + balance, 0n);
+      maxButton.dataset.maxValue = totalBalance.toString();
+    } else {
+      const gotchi = ownedAavegotchis.find(g => g.tokenId.toString() === tokenIdValue);
+      if (!gotchi) throw new Error('Selected Aavegotchi not found.');
+      const escrowWallet = gotchi.escrow;
+      totalBalance = await tokenContract.balanceOf(escrowWallet);
+      maxButton.dataset.maxValue = totalBalance.toString();
+    }
+
+    maxButton.disabled = false;
+    maxButton.innerText = 'Max';
+  } catch (error) {
+    console.error('Error fetching token balance:', error);
+    showToast('Error fetching token balance.', 'error');
+    maxButton.disabled = true;
+    maxButton.innerText = 'Max';
+  }
+}
+
+// Function to Handle Max Button Click
+export async function handleMaxButtonClick(form) {
+  const amountInput = form.querySelector('input[name="_transferAmount"]');
+  const maxButton = form.querySelector('.max-button');
+  const maxValue = maxButton.dataset.maxValue;
+
+  if (maxValue) {
+    const erc20ContractSelect = form.querySelector('select[name="_erc20Contract"]');
+    const customErc20Input = form.querySelector('input[name="custom-erc20-address"]');
+    let erc20Address = erc20ContractSelect ? erc20ContractSelect.value : null;
+
+    if (erc20Address === 'custom') {
+      erc20Address = customErc20Input ? customErc20Input.value : null;
+    }
+
+    const tokenContract = new ethers.Contract(erc20Address, ghstABI, provider);
+    const decimals = await tokenContract.decimals();
+
+    const formattedValue = ethers.formatUnits(maxValue, decimals);
+    amountInput.value = formattedValue;
+  }
 }
 
 console.log('ui.js loaded');

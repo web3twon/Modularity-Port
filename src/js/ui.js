@@ -318,7 +318,7 @@ export async function handleMaxButtonClick(form) {
 }
 
 // Function to generate method form
-export function generateMethodForm(method, methodName) {
+export async function generateMethodForm(method, methodName) {
   const formContainer = document.createElement('div');
   formContainer.className = 'form-container';
 
@@ -334,7 +334,7 @@ export function generateMethodForm(method, methodName) {
   form.setAttribute('data-method', methodName);
   form.addEventListener('submit', handleFormSubmit);
 
-  method.inputs.forEach(input => {
+  for (const input of method.inputs) {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
 
@@ -425,7 +425,7 @@ export function generateMethodForm(method, methodName) {
       customInput.style.display = 'none';
       formGroup.appendChild(customInput);
 
-      inputElement.addEventListener('change', async (e) => {
+      inputElement.addEventListener('change', (e) => {
         const isCustom = e.target.value === 'custom';
         customInput.style.display = isCustom ? 'block' : 'none';
         
@@ -433,45 +433,44 @@ export function generateMethodForm(method, methodName) {
           customInput.value = ''; // Clear the custom input field
         }
 
-        await updateMaxButton(form);
+        updateMaxButton(form);
 
         if (!isCustom) {
-          await updateSelectedERC20Token(e.target.value);
+          updateSelectedERC20Token(e.target.value);
         }
       });
 
-customInput.addEventListener('input', debounce(async (e) => {
-  const address = e.target.value.trim();
-  if (address === '' || address.length < 42) {
-    // Reset to default GHST token
-    selectedERC20Address = ghstContractAddress;
-    selectedERC20Symbol = 'GHST';
-    selectedERC20Decimals = 18;
-  } else {
-    const formattedAddress = validateAndFormatERC20Address(address);
-    if (formattedAddress) {
-      try {
-        await updateSelectedERC20Token(formattedAddress);
-      } catch (error) {
-        console.error('Error updating ERC20 token:', error);
-        showToast('Invalid ERC20 token address.', 'error');
-      }
-    } else {
-      showToast('Invalid ERC20 address format.', 'error');
-    }
-  }
+      customInput.addEventListener('input', debounce((e) => {
+        const address = e.target.value.trim();
+        if (address === '' || address.length < 42) {
+          // Reset to default GHST token
+          selectedERC20Address = ghstContractAddress;
+          selectedERC20Symbol = 'GHST';
+          selectedERC20Decimals = 18;
+        } else {
+          const formattedAddress = validateAndFormatERC20Address(address);
+          if (formattedAddress) {
+            updateSelectedERC20Token(formattedAddress)
+              .catch(error => {
+                console.error('Error updating ERC20 token:', error);
+                showToast('Invalid ERC20 token address.', 'error');
+              });
+          } else {
+            showToast('Invalid ERC20 address format.', 'error');
+          }
+        }
 
-  // Update table header
-  const tableHeader = document.querySelector('.aavegotchi-table th:nth-child(4)');
-  if (tableHeader) {
-    tableHeader.innerText = `${selectedERC20Symbol} Balance`;
-  }
+        // Update table header
+        const tableHeader = document.querySelector('.aavegotchi-table th:nth-child(4)');
+        if (tableHeader) {
+          tableHeader.innerText = `${selectedERC20Symbol} Balance`;
+        }
 
         // Refresh table balances
-        await refreshTableBalances();
+        refreshTableBalances();
       }, 500));
 
-      await updateSelectedERC20Token(inputElement.value);
+      updateSelectedERC20Token(inputElement.value);
     } else if (input.name === '_transferAmount') {
       inputElement = document.createElement('input');
       inputElement.type = 'text';
@@ -499,7 +498,7 @@ customInput.addEventListener('input', debounce(async (e) => {
     }
 
     form.appendChild(formGroup);
-  });
+  }
 
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';

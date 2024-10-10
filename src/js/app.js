@@ -497,7 +497,6 @@ window.onload = init;
 
 // Export functions that need to be used in other files
 export {
-  generateMethodForms,
   handleFormSubmit,
   getUserSpecifiedAmounts,
   toggleCollapse,

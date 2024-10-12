@@ -13,6 +13,8 @@ const GotchiBankingServices: React.FC = () => {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [aavegotchis, setAavegotchis] = useState<Aavegotchi[]>([]);
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
+  const [customTokenSymbol, setCustomTokenSymbol] = useState<string>('GHST');
+  const [isCustomToken, setIsCustomToken] = useState(false);
 
   const checkConnection = useCallback(async () => {
     if (window.ethereum) {
@@ -41,6 +43,7 @@ const GotchiBankingServices: React.FC = () => {
       }
     }
   }, []);
+
 
   useEffect(() => {
     checkConnection();
@@ -132,6 +135,7 @@ const GotchiBankingServices: React.FC = () => {
         };
       }));
 
+
       console.log('Processed Aavegotchi Data:', aavegotchisData);
       setAavegotchis(aavegotchisData);
     } catch (error) {
@@ -159,6 +163,7 @@ const GotchiBankingServices: React.FC = () => {
         console.warn('Failed to fetch symbol, using address as symbol', error);
         symbol = tokenAddress.slice(0, 6) + '...';
       }
+      setCustomTokenSymbol(symbol);
 
       console.log('Fetching token decimals...');
       let decimals: number;
@@ -184,8 +189,10 @@ const GotchiBankingServices: React.FC = () => {
         };
       }));
 
+
       setAavegotchis(updatedAavegotchis);
       console.log('Aavegotchi balances updated successfully');
+      setIsCustomToken(true);
     } catch (error) {
       console.error('Error fetching custom token balances:', error);
     }
@@ -206,11 +213,23 @@ const GotchiBankingServices: React.FC = () => {
     }
   }, [contract, signer]);
 
+  const handleTokenSelection = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedToken = event.target.value;
+    if (selectedToken === 'GHST') {
+      setIsCustomToken(false);
+      setCustomTokenSymbol('GHST');
+    } else {
+      setIsCustomToken(true);
+    }
+    // You might want to add more logic here if needed
+  }, []);
+
   const withdrawalFormProps: WithdrawalFormProps = {
     aavegotchis,
     onWithdraw: handleWithdraw,
     onCustomTokenChange: handleCustomTokenChange,
     signer,
+    onTokenSelection: handleTokenSelection
   };
 
   if (!account) {
@@ -241,10 +260,13 @@ const GotchiBankingServices: React.FC = () => {
         walletAddress={account}
         onConnectWallet={connectWallet}
         aavegotchis={aavegotchis}
+        customTokenSymbol={customTokenSymbol}
+        isCustomToken={isCustomToken}
       />
       <WithdrawalForm {...withdrawalFormProps} />
     </div>
   );
 };
+
 
 export default GotchiBankingServices;

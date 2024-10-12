@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import styles from './WithdrawalForm.module.css';
-import { CONTRACT_ADDRESS, DIAMOND_ABI } from './constants';
+import { CONTRACT_ADDRESS, DIAMOND_ABI, ERC20_ABI } from './constants';
 
 export interface Aavegotchi {
   tokenId: string;
@@ -12,16 +12,18 @@ export interface Aavegotchi {
   escrowWallet: string;
 }
 
+
 export interface WithdrawalFormProps {
   aavegotchis: Aavegotchi[];
   onWithdraw: (tokenAddress: string, selectedGotchis: string[], amount: string) => Promise<void>;
   onCustomTokenChange: (tokenAddress: string) => Promise<void>;
   signer: ethers.Signer | null;
+  onTokenSelection: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 const GHST_ADDRESS = '0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7';
 
-const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw, onCustomTokenChange, signer }) => {
+const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw, onCustomTokenChange, signer, onTokenSelection }) => {
   const [selectedGotchis, setSelectedGotchis] = useState<string[]>([]);
   const [tokenOption, setTokenOption] = useState('GHST');
   const [customTokenAddress, setCustomTokenAddress] = useState('');
@@ -38,6 +40,7 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
     }
   }, [tokenOption]);
 
+
   const handleGotchiSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     if (value === 'all') {
@@ -53,31 +56,37 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
       setCustomTokenAddress('');
       setCurrentTokenSymbol('GHST');
     }
+    onTokenSelection(event);
   };
 
   const handleCustomTokenAddressChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const address = event.target.value;
     setCustomTokenAddress(address);
-    if (ethers.isAddress(address)) {
-      await onCustomTokenChange(address);
+    if (ethers.isAddress(address) && signer) {
+      try {
+        const tokenContract = new ethers.Contract(address, ERC20_ABI, signer);
+        const symbol = await tokenContract.symbol();
+        setCurrentTokenSymbol(symbol);
+        await onCustomTokenChange(address);
+      } catch (error) {
+        console.error('Error fetching token symbol:', error);
+        setCurrentTokenSymbol('???');
+      }
     }
   };
 
   const handleMaxAmount = () => {
-    if (selectedGotchis.length === 1) {
-      const selectedGotchi = ownedAavegotchis.find(gotchi => gotchi.tokenId === selectedGotchis[0]);
-      if (selectedGotchi) {
-        setAmount(tokenOption === 'GHST' ? selectedGotchi.ghstBalance : selectedGotchi.customTokenBalance || '0');
-      }
-    } else if (selectedGotchis.length > 1) {
-      const totalBalance = ownedAavegotchis
-        .filter(gotchi => selectedGotchis.includes(gotchi.tokenId))
-        .reduce((sum, gotchi) => {
-          const balance = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
-          return sum + parseFloat(balance);
-        }, 0);
-      setAmount(totalBalance.toString());
-    }
+    const eligibleGotchis = ownedAavegotchis.filter(gotchi => !gotchi.isLent);
+    if (eligibleGotchis.length === 0) return;
+
+    const totalBalance = eligibleGotchis.reduce((sum, gotchi) => {
+      const balance = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
+      return sum + BigInt(ethers.parseUnits(balance, 18));
+    }, BigInt(0));
+    
+    const formattedBalance = ethers.formatUnits(totalBalance, 18);
+    setAmount(formattedBalance);
+    console.log(`Max amount set for multiple Aavegotchis: ${formattedBalance}`);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -88,63 +97,48 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
     }
 
     setIsWithdrawing(true);
-    setErrorMessage(null); // Clear any previous error messages
+    setErrorMessage(null);
 
     try {
       const tokenAddress = tokenOption === 'GHST' ? GHST_ADDRESS : customTokenAddress;
       const contract = new ethers.Contract(CONTRACT_ADDRESS, DIAMOND_ABI, signer);
       const userAddress = await signer.getAddress();
-      const totalAmount = ethers.parseUnits(amount, 18); // Assuming 18 decimals, adjust if needed
 
-      if (selectedGotchis.length === 1) {
-        // Single withdrawal using Diamond facet
-        console.log('Calling transferEscrow with:', {
-          tokenId: selectedGotchis[0],
-          tokenAddress,
-          recipient: userAddress,
-          amount: totalAmount.toString()
-        });
+      const eligibleGotchis = ownedAavegotchis.filter(gotchi => !gotchi.isLent);
+      const totalAmount = BigInt(ethers.parseUnits(amount, 18));
 
-        await contract.transferEscrow(
-          selectedGotchis[0],
-          tokenAddress,
-          userAddress,
-          totalAmount
-        );
-      } else {
-        // Batch withdrawal using Aavegotchi facet
-        const tokenIds = selectedGotchis.map(id => BigInt(id));
-        const erc20Contracts = Array(selectedGotchis.length).fill(tokenAddress);
-        const recipients = Array(selectedGotchis.length).fill(userAddress);
-        const amounts = distributeAmount(totalAmount, selectedGotchis.length);
+      const withdrawals = await Promise.all(eligibleGotchis.map(async (gotchi) => {
+        const balance = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
+        const balanceBigInt = BigInt(ethers.parseUnits(balance, 18));
+        const withdrawAmount = totalAmount * BigInt(ethers.parseUnits(balance, 18)) / BigInt(ethers.parseUnits(amount, 18));
+        const actualWithdrawAmount = withdrawAmount > balanceBigInt ? balanceBigInt : withdrawAmount;
+        return {
+          tokenId: BigInt(gotchi.tokenId),
+          amount: actualWithdrawAmount
+        };
+      }));
 
-        console.log('Calling batchTransferEscrow with:', {
-          tokenIds,
-          erc20Contracts,
-          recipients,
-          amounts: amounts.map(a => a.toString())
-        });
+      console.log('Attempting batch withdrawal:');
+      withdrawals.forEach(w => console.log(`Aavegotchi ${w.tokenId}: ${ethers.formatUnits(w.amount, 18)}`));
 
-        await contract.batchTransferEscrow(
-          tokenIds,
-          erc20Contracts,
-          recipients,
-          amounts
-        );
-      }
+      await contract.batchTransferEscrow(
+        withdrawals.map(w => w.tokenId),
+        withdrawals.map(() => tokenAddress),
+        withdrawals.map(() => userAddress),
+        withdrawals.map(w => w.amount)
+      );
 
       // Reset form and update balances
       setAmount('');
       setSelectedGotchis([]);
-      await onWithdraw(tokenAddress, selectedGotchis, amount);
-    } catch (error: unknown) {
+      await onWithdraw(tokenAddress, eligibleGotchis.map(g => g.tokenId), amount);
+    } catch (error) {
       console.error('Error during withdrawal:', error);
-      
       if (error instanceof Error) {
         console.log('Error message:', error.message);
         setErrorMessage(error.message);
       } else {
-        setErrorMessage('An error occurred during withdrawal. Please try again.');
+        setErrorMessage('An unknown error occurred during withdrawal');
       }
       
       if (typeof error === 'object' && error !== null) {
@@ -232,5 +226,6 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
     </form>
   );
 };
+
 
 export default WithdrawalForm;

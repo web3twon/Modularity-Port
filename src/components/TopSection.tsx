@@ -7,6 +7,8 @@ interface TopSectionProps {
   walletAddress: string | null;
   onConnectWallet: () => void;
   aavegotchis: Aavegotchi[];
+  customTokenSymbol: string;
+  isCustomToken: boolean;
 }
 
 interface Aavegotchi {
@@ -14,10 +16,19 @@ interface Aavegotchi {
   name: string;
   escrowWallet: string;
   ghstBalance: string;
+  customTokenBalance?: string;
   isLent: boolean;
 }
 
-const TopSection: React.FC<TopSectionProps> = ({ contractAddress, network, walletAddress, onConnectWallet, aavegotchis }) => {
+const TopSection: React.FC<TopSectionProps> = ({ 
+  contractAddress, 
+  network, 
+  walletAddress, 
+  onConnectWallet, 
+  aavegotchis, 
+  customTokenSymbol,
+  isCustomToken
+}) => {
   const [toast, setToast] = useState({ show: false, message: '' });
 
   const copyToClipboard = (text: string) => {
@@ -44,7 +55,7 @@ const TopSection: React.FC<TopSectionProps> = ({ contractAddress, network, walle
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.info}>
-            <h1 className={styles.title}>Gotchi Banking Services69</h1>
+            <h1 className={styles.title}>Gotchi Banking Services</h1>
             <p className={styles.contractInfo}>Contract: {contractAddress}</p>
             <p className={styles.networkInfo}>Network: {network}</p>
           </div>
@@ -65,7 +76,7 @@ const TopSection: React.FC<TopSectionProps> = ({ contractAddress, network, walle
               <th className={styles.rightAlign}>TOKEN ID</th>
               <th>NAME</th>
               <th>ESCROW WALLET</th>
-              <th className={styles.rightAlign}>GHST BALANCE</th>
+              <th className={styles.rightAlign}>{isCustomToken ? customTokenSymbol : 'GHST'} BALANCE</th>
               <th>OWNERSHIP</th>
             </tr>
           </thead>
@@ -83,7 +94,12 @@ const TopSection: React.FC<TopSectionProps> = ({ contractAddress, network, walle
                     📝
                   </span>
                 </td>
-                <td className={styles.rightAlign}>{parseFloat(gotchi.ghstBalance).toFixed(4)}</td>
+                <td className={styles.rightAlign}>
+                  {isCustomToken 
+                    ? parseFloat(gotchi.customTokenBalance || '0').toFixed(4)
+                    : parseFloat(gotchi.ghstBalance).toFixed(4)
+                  }
+                </td>
                 <td>
                   {gotchi.isLent ? 
                     <span className={styles.rented}>🔑 Rented</span> : 

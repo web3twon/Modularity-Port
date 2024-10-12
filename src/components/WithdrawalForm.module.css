@@ -1,0 +1,58 @@
+/* src/components/WithdrawalForm.module.css */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+  color: white;
+}
+
+.form h2 {
+  text-align: center;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.select,
+.input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #1a1b2e;
+  color: white;
+}
+
+.amountContainer {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.amountContainer .input {
+  flex-grow: 1;
+}
+
+.maxButton,
+.submitButton {
+  padding: 0.5rem 1rem;
+  background-color: #38e8c6;
+  color: #1a1b2e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.maxButton:hover,
+.submitButton:hover {
+  background-color: #2bc4a8;
+}
+
+.submitButton {
+  margin-top: 1rem;
+}

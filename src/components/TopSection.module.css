@@ -1,0 +1,194 @@
+.topSection {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #1a1a2e;
+  border-radius: 8px;
+  overflow: hidden; /* This will ensure child elements don't overflow */
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Header styles */
+.header {
+  width: 100%;
+  background-color: #1a1a2e;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.info {
+  color: white;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700; /* Bold */
+  margin-bottom: 10px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.contractInfo, .networkInfo {
+  font-size: 14px;
+  margin: 5px 0;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400; /* Regular */
+}
+
+.walletInfo {
+  background-color: #16213e;
+  padding: 10px 20px;
+  border-radius: 5px;
+  color: white;
+  text-align: right;
+  min-width: 200px;
+}
+
+.connectButton {
+  background-color: #4ecdc4;
+  color: #1a1a2e;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.connectButton:hover {
+  background-color: #45b7ae;
+}
+
+/* Table styles */
+.tableContainer {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  overflow-x: auto;
+  background-color: #1a1a2e;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tableTitle {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #444;
+}
+
+.table th {
+  background-color: #282c34;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 14px;
+  color: #888;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 20px; /* Add left padding to first column */
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 20px; /* Add right padding to last column */
+}
+
+.rightAlign {
+  text-align: right;
+}
+
+.evenRow {
+  background-color: #282c34;
+}
+
+.oddRow {
+  background-color: #1e2128;
+}
+
+.rented {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.owned {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.copyIcon {
+  margin-left: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.copyIcon:hover {
+  opacity: 1;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 1000;
+  animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .headerContent {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .info, .walletInfo {
+    text-align: center;
+  }
+
+  .walletInfo {
+    margin-top: 10px;
+  }
+
+  .tableContainer {
+    padding: 10px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px;
+  }
+}

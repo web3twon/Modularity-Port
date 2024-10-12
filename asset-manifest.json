@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/Modularity-Port/static/css/main.d8024c9c.css",
-    "main.js": "/Modularity-Port/static/js/main.a185f96f.js",
+    "main.css": "/Modularity-Port/static/css/main.e87ad46a.css",
+    "main.js": "/Modularity-Port/static/js/main.c2aa3cfd.js",
     "index.html": "/Modularity-Port/index.html",
-    "main.d8024c9c.css.map": "/Modularity-Port/static/css/main.d8024c9c.css.map",
-    "main.a185f96f.js.map": "/Modularity-Port/static/js/main.a185f96f.js.map"
+    "main.e87ad46a.css.map": "/Modularity-Port/static/css/main.e87ad46a.css.map",
+    "main.c2aa3cfd.js.map": "/Modularity-Port/static/js/main.c2aa3cfd.js.map"
   },
   "entrypoints": [
-    "static/css/main.d8024c9c.css",
-    "static/js/main.a185f96f.js"
+    "static/css/main.e87ad46a.css",
+    "static/js/main.c2aa3cfd.js"
   ]
 }

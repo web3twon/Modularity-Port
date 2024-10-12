@@ -44,7 +44,7 @@ const TopSection: React.FC<TopSectionProps> = ({ contractAddress, network, walle
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.info}>
-            <h1 className={styles.title}>Gotchi Banking Services</h1>
+            <h1 className={styles.title}>Gotchi Banking Services69</h1>
             <p className={styles.contractInfo}>Contract: {contractAddress}</p>
             <p className={styles.networkInfo}>Network: {network}</p>
           </div>

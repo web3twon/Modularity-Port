@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/Modularity-Port/static/css/main.d8024c9c.css",
+    "main.js": "/Modularity-Port/static/js/main.a185f96f.js",
+    "index.html": "/Modularity-Port/index.html",
+    "main.d8024c9c.css.map": "/Modularity-Port/static/css/main.d8024c9c.css.map",
+    "main.a185f96f.js.map": "/Modularity-Port/static/js/main.a185f96f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d8024c9c.css",
+    "static/js/main.a185f96f.js"
+  ]
+}

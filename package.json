@@ -21,9 +21,10 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && move-cli build/* . && rimraf build",
+    "build": "react-scripts build && shx cp -r build/* .",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "clean": "shx rm -rf static asset-manifest.json favicon.ico index.html logo192.png logo512.png manifest.json robots.txt"
   },
   "eslintConfig": {
     "extends": [
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "move-cli": "^2.0.0",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "shx": "^0.3.4"
   }
 }

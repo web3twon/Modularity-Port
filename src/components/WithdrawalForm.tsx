@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import { ethers } from 'ethers';
 import styles from './WithdrawalForm.module.css';
 import { CONTRACT_ADDRESS, DIAMOND_ABI, ERC20_ABI } from './constants';
+import { formatNumberWithCommas } from '../utils/formatters';
 
 export interface Aavegotchi {
   tokenId: string;
@@ -18,7 +19,7 @@ export interface WithdrawalFormProps {
   onWithdraw: (tokenAddress: string, selectedGotchis: string[], amount: string) => Promise<void>;
   onCustomTokenChange: (tokenAddress: string) => Promise<void>;
   signer: ethers.Signer | null;
-  onTokenSelection: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  onTokenSelection: (tokenOption: string) => void;
 }
 
 const GHST_ADDRESS = '0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7';
@@ -50,28 +51,20 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
     }
   };
 
-  const handleTokenSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setTokenOption(event.target.value);
-    if (event.target.value === 'GHST') {
+  const handleTokenOptionChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const newTokenOption = event.target.value;
+    setTokenOption(newTokenOption);
+    onTokenSelection(newTokenOption);
+    if (newTokenOption === 'GHST') {
       setCustomTokenAddress('');
-      setCurrentTokenSymbol('GHST');
     }
-    onTokenSelection(event);
   };
 
-  const handleCustomTokenAddressChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomTokenAddressChange = (event: ChangeEvent<HTMLInputElement>) => {
     const address = event.target.value;
     setCustomTokenAddress(address);
-    if (ethers.isAddress(address) && signer) {
-      try {
-        const tokenContract = new ethers.Contract(address, ERC20_ABI, signer);
-        const symbol = await tokenContract.symbol();
-        setCurrentTokenSymbol(symbol);
-        await onCustomTokenChange(address);
-      } catch (error) {
-        console.error('Error fetching token symbol:', error);
-        setCurrentTokenSymbol('???');
-      }
+    if (address) {  // Only call onCustomTokenChange if there's an address
+      onCustomTokenChange(address);
     }
   };
 
@@ -177,32 +170,34 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
           <option value="all">All Owned Aavegotchi</option>
           {ownedAavegotchis.map((gotchi) => (
             <option key={gotchi.tokenId} value={gotchi.tokenId}>
-              {gotchi.name || `Aavegotchi #${gotchi.tokenId}`} (Balance: {tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0'} {currentTokenSymbol})
+              {gotchi.name || `Aavegotchi #${gotchi.tokenId}`} (Balance: {formatNumberWithCommas(parseFloat(tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0').toFixed(4))} {currentTokenSymbol})
             </option>
           ))}
         </select>
       </label>
       <label>
-        Token Address:
+        Token:
         <select
           value={tokenOption}
-          onChange={handleTokenSelection}
+          onChange={handleTokenOptionChange}
           className={styles.select}
         >
           <option value="GHST">GHST</option>
-          <option value="custom">Add Your Own Token</option>
+          <option value="custom">Add your own token</option>
         </select>
-        {tokenOption === 'custom' && (
+      </label>
+      {tokenOption === 'custom' && (
+        <label>
+          Custom Token Address:
           <input
             type="text"
             value={customTokenAddress}
             onChange={handleCustomTokenAddressChange}
-            placeholder="Enter ERC20 token address"
-            required
+            placeholder="Enter token address"
             className={styles.input}
           />
-        )}
-      </label>
+        </label>
+      )}
       <label>
         Amount:
         <div className={styles.amountContainer}>

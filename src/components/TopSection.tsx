@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './TopSection.module.css';
+import { formatNumberWithCommas } from '../utils/formatters';
 
 interface TopSectionProps {
   contractAddress: string;
@@ -9,6 +10,7 @@ interface TopSectionProps {
   aavegotchis: Aavegotchi[];
   customTokenSymbol: string;
   isCustomToken: boolean;
+  tokenImage: string;
 }
 
 interface Aavegotchi {
@@ -24,19 +26,20 @@ const TopSection: React.FC<TopSectionProps> = ({
   contractAddress, 
   network, 
   walletAddress, 
-  onConnectWallet, 
+  onConnectWallet,
   aavegotchis, 
   customTokenSymbol,
-  isCustomToken
+  isCustomToken,
+  tokenImage
 }) => {
   const [toast, setToast] = useState({ show: false, message: '' });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      setToast({ show: true, message: 'Address copied to clipboard!' });
-    }, (err) => {
-      console.error('Could not copy text: ', err);
-      setToast({ show: true, message: 'Failed to copy address' });
+      setToast({ show: true, message: 'Copied to clipboard!' });
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      setToast({ show: true, message: 'Failed to copy' });
     });
   };
 
@@ -51,19 +54,18 @@ const TopSection: React.FC<TopSectionProps> = ({
 
   return (
     <div className={styles.topSection}>
-      {toast.show && <div className={styles.toast}>{toast.message}</div>}
       <header className={styles.header}>
+        <h1 className={styles.title}>Aavegotchi Banking Services</h1>
         <div className={styles.headerContent}>
           <div className={styles.info}>
-            <h1 className={styles.title}>Gotchi Banking Services</h1>
-            <p className={styles.contractInfo}>Contract: {contractAddress}</p>
             <p className={styles.networkInfo}>Network: {network}</p>
+            <p className={styles.contractInfo}>Contract: {contractAddress}</p>
           </div>
           <div className={styles.walletInfo}>
             {walletAddress ? (
-              <p>Connected: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}</p>
+              <p>Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</p>
             ) : (
-              <button onClick={onConnectWallet} className={styles.connectButton}>Connect Wallet</button>
+              <button className={styles.connectButton} onClick={onConnectWallet}>Connect Wallet</button>
             )}
           </div>
         </div>
@@ -76,7 +78,23 @@ const TopSection: React.FC<TopSectionProps> = ({
               <th className={styles.rightAlign}>TOKEN ID</th>
               <th>NAME</th>
               <th>ESCROW WALLET</th>
-              <th className={styles.rightAlign}>{isCustomToken ? customTokenSymbol : 'GHST'} BALANCE</th>
+              <th className={styles.rightAlign}>
+                <div className={styles.balanceHeader}>
+                  <span>{isCustomToken ? customTokenSymbol : 'GHST'} BALANCE</span>
+                  <div className={styles.tokenImageWrapper}>
+                    <img 
+                      key={tokenImage}
+                      src={tokenImage} 
+                      alt={isCustomToken ? customTokenSymbol : 'GHST'} 
+                      className={styles.tokenImage} 
+                      onError={(e) => {
+                        e.currentTarget.onerror = null; 
+                        e.currentTarget.src = '/images/default-token.png';
+                      }}
+                    />
+                  </div>
+                </div>
+              </th>
               <th>OWNERSHIP</th>
             </tr>
           </thead>
@@ -95,10 +113,9 @@ const TopSection: React.FC<TopSectionProps> = ({
                   </span>
                 </td>
                 <td className={styles.rightAlign}>
-                  {isCustomToken 
-                    ? parseFloat(gotchi.customTokenBalance || '0').toFixed(4)
-                    : parseFloat(gotchi.ghstBalance).toFixed(4)
-                  }
+                  {formatNumberWithCommas(
+                    parseFloat(isCustomToken ? (gotchi.customTokenBalance || '0') : gotchi.ghstBalance).toFixed(4)
+                  )}
                 </td>
                 <td>
                   {gotchi.isLent ? 
@@ -111,6 +128,11 @@ const TopSection: React.FC<TopSectionProps> = ({
           </tbody>
         </table>
       </div>
+      {toast.show && (
+        <div className={styles.toast}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 };

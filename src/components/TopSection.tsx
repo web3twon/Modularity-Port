@@ -22,22 +22,22 @@ interface Aavegotchi {
   isLent: boolean;
 }
 
-const TopSection: React.FC<TopSectionProps> = ({ 
-  contractAddress, 
-  network, 
-  walletAddress, 
+const TopSection: React.FC<TopSectionProps> = ({
+  contractAddress,
+  network,
+  walletAddress,
   onConnectWallet,
-  aavegotchis, 
+  aavegotchis,
   customTokenSymbol,
   isCustomToken,
-  tokenImage
+  tokenImage,
 }) => {
   const [toast, setToast] = useState({ show: false, message: '' });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setToast({ show: true, message: 'Copied to clipboard!' });
-    }).catch(err => {
+    }).catch((err) => {
       console.error('Failed to copy text: ', err);
       setToast({ show: true, message: 'Failed to copy' });
     });
@@ -63,9 +63,13 @@ const TopSection: React.FC<TopSectionProps> = ({
           </div>
           <div className={styles.walletInfo}>
             {walletAddress ? (
-              <p>Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</p>
+              <p>
+                Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </p>
             ) : (
-              <button className={styles.connectButton} onClick={onConnectWallet}>Connect Wallet</button>
+              <button className={styles.connectButton} onClick={onConnectWallet}>
+                Connect Wallet
+              </button>
             )}
           </div>
         </div>
@@ -80,18 +84,20 @@ const TopSection: React.FC<TopSectionProps> = ({
               <th>ESCROW WALLET</th>
               <th className={styles.rightAlign}>
                 <div className={styles.balanceHeader}>
-                  <span>{isCustomToken ? customTokenSymbol : 'GHST'} BALANCE</span>
+                  <span>{isCustomToken && customTokenSymbol ? customTokenSymbol : 'GHST'} BALANCE</span>
                   <div className={styles.tokenImageWrapper}>
-                    <img 
-                      key={tokenImage}
-                      src={tokenImage} 
-                      alt={isCustomToken ? customTokenSymbol : 'GHST'} 
-                      className={styles.tokenImage} 
-                      onError={(e) => {
-                        e.currentTarget.onerror = null; 
-                        e.currentTarget.src = '/images/default-token.png';
-                      }}
-                    />
+                    {tokenImage ? (
+                      <img
+                        key={tokenImage}
+                        src={tokenImage}
+                        alt={isCustomToken ? customTokenSymbol : 'GHST'}
+                        className={styles.tokenImage}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/images/default-token.png';
+                        }}
+                      />
+                    ) : null}
                   </div>
                 </div>
               </th>
@@ -102,37 +108,31 @@ const TopSection: React.FC<TopSectionProps> = ({
             {aavegotchis.map((gotchi, index) => (
               <tr key={gotchi.tokenId} className={index % 2 === 0 ? styles.evenRow : styles.oddRow}>
                 <td className={styles.rightAlign}>{gotchi.tokenId}</td>
-                <td>{gotchi.name || '--'}</td>
+                <td>{gotchi.name || `Aavegotchi #${gotchi.tokenId}`}</td>
                 <td>
                   {gotchi.escrowWallet.slice(0, 6) + '...' + gotchi.escrowWallet.slice(-4)}
-                  <span 
-                    className={styles.copyIcon} 
-                    onClick={() => copyToClipboard(gotchi.escrowWallet)}
-                  >
+                  <span className={styles.copyIcon} onClick={() => copyToClipboard(gotchi.escrowWallet)}>
                     📝
                   </span>
                 </td>
                 <td className={styles.rightAlign}>
                   {formatNumberWithCommas(
-                    parseFloat(isCustomToken ? (gotchi.customTokenBalance || '0') : gotchi.ghstBalance).toFixed(4)
+                    parseFloat(isCustomToken ? gotchi.customTokenBalance || '0' : gotchi.ghstBalance).toFixed(4)
                   )}
                 </td>
                 <td>
-                  {gotchi.isLent ? 
-                    <span className={styles.rented}>🔑 Rented</span> : 
+                  {gotchi.isLent ? (
+                    <span className={styles.rented}>🔑 Rented</span>
+                  ) : (
                     <span className={styles.owned}>🏠 Owned</span>
-                  }
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {toast.show && (
-        <div className={styles.toast}>
-          {toast.message}
-        </div>
-      )}
+      {toast.show && <div className={styles.toast}>{toast.message}</div>}
     </div>
   );
 };

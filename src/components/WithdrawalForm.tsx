@@ -2,7 +2,6 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import { ethers } from 'ethers';
 import styles from './WithdrawalForm.module.css';
 import { CONTRACT_ADDRESS, DIAMOND_ABI, ERC20_ABI } from './constants';
-import { formatNumberWithCommas } from '../utils/formatters';
 
 export interface Aavegotchi {
   tokenId: string;
@@ -13,42 +12,51 @@ export interface Aavegotchi {
   escrowWallet: string;
 }
 
-
 export interface WithdrawalFormProps {
   aavegotchis: Aavegotchi[];
   onWithdraw: (tokenAddress: string, selectedGotchis: string[], amount: string) => Promise<void>;
   onCustomTokenChange: (tokenAddress: string) => Promise<void>;
   signer: ethers.Signer | null;
   onTokenSelection: (tokenOption: string) => void;
+  tokenSymbol: string;
+  onCustomTokenInvalid: () => void;
 }
 
 const GHST_ADDRESS = '0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7';
 
-const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw, onCustomTokenChange, signer, onTokenSelection }) => {
+const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
+  aavegotchis,
+  onWithdraw,
+  onCustomTokenChange,
+  signer,
+  onTokenSelection,
+  tokenSymbol,
+  onCustomTokenInvalid,
+}) => {
   const [selectedGotchis, setSelectedGotchis] = useState<string[]>([]);
   const [tokenOption, setTokenOption] = useState('GHST');
   const [customTokenAddress, setCustomTokenAddress] = useState('');
   const [amount, setAmount] = useState('');
-  const [currentTokenSymbol, setCurrentTokenSymbol] = useState('GHST');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const ownedAavegotchis = aavegotchis.filter(gotchi => !gotchi.isLent);
+  const ownedAavegotchis = aavegotchis.filter((gotchi) => !gotchi.isLent);
 
   useEffect(() => {
-    if (tokenOption === 'GHST') {
-      setCurrentTokenSymbol('GHST');
+    if (selectedGotchis.length === 0 && ownedAavegotchis.length > 0) {
+      setSelectedGotchis(ownedAavegotchis.map((gotchi) => gotchi.tokenId));
     }
-  }, [tokenOption]);
-
+  }, [ownedAavegotchis, selectedGotchis]);
 
   const handleGotchiSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     if (value === 'all') {
-      setSelectedGotchis(ownedAavegotchis.map(gotchi => gotchi.tokenId));
+      setSelectedGotchis(ownedAavegotchis.map((gotchi) => gotchi.tokenId));
     } else {
       setSelectedGotchis([value]);
     }
+    // Reset the amount when selection changes
+    setAmount('');
   };
 
   const handleTokenOptionChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -56,30 +64,37 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
     setTokenOption(newTokenOption);
     onTokenSelection(newTokenOption);
     if (newTokenOption === 'GHST') {
+      setCustomTokenAddress(GHST_ADDRESS);
+    } else if (newTokenOption === 'custom') {
       setCustomTokenAddress('');
+      // Clear token symbol if custom token is selected
     }
   };
 
   const handleCustomTokenAddressChange = (event: ChangeEvent<HTMLInputElement>) => {
     const address = event.target.value;
     setCustomTokenAddress(address);
-    if (address) {  // Only call onCustomTokenChange if there's an address
+    if (ethers.isAddress(address)) {
       onCustomTokenChange(address);
+    } else {
+      // If the address is invalid, call onCustomTokenInvalid
+      onCustomTokenInvalid();
     }
   };
 
   const handleMaxAmount = () => {
-    const eligibleGotchis = ownedAavegotchis.filter(gotchi => !gotchi.isLent);
-    if (eligibleGotchis.length === 0) return;
+    let totalBalance = BigInt(0);
 
-    const totalBalance = eligibleGotchis.reduce((sum, gotchi) => {
+    const selectedGotchiData = ownedAavegotchis.filter((gotchi) => selectedGotchis.includes(gotchi.tokenId));
+
+    totalBalance = selectedGotchiData.reduce((sum, gotchi) => {
       const balance = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
       return sum + BigInt(ethers.parseUnits(balance, 18));
     }, BigInt(0));
-    
+
     const formattedBalance = ethers.formatUnits(totalBalance, 18);
     setAmount(formattedBalance);
-    console.log(`Max amount set for multiple Aavegotchis: ${formattedBalance}`);
+    console.log(`Max amount set: ${formattedBalance} for ${selectedGotchis.length} Aavegotchi(s)`);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -97,34 +112,47 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
       const contract = new ethers.Contract(CONTRACT_ADDRESS, DIAMOND_ABI, signer);
       const userAddress = await signer.getAddress();
 
-      const eligibleGotchis = ownedAavegotchis.filter(gotchi => !gotchi.isLent);
-      const totalAmount = BigInt(ethers.parseUnits(amount, 18));
+      const selectedGotchiData = ownedAavegotchis.filter((gotchi) => selectedGotchis.includes(gotchi.tokenId));
+      const totalAmount = ethers.parseUnits(amount, 18);
+      const count = selectedGotchiData.length;
+      if (count === 0) {
+        throw new Error('No Aavegotchis selected');
+      }
 
-      const withdrawals = await Promise.all(eligibleGotchis.map(async (gotchi) => {
-        const balance = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
-        const balanceBigInt = BigInt(ethers.parseUnits(balance, 18));
-        const withdrawAmount = totalAmount * BigInt(ethers.parseUnits(balance, 18)) / BigInt(ethers.parseUnits(amount, 18));
-        const actualWithdrawAmount = withdrawAmount > balanceBigInt ? balanceBigInt : withdrawAmount;
+      // Distribute the total amount among selected gotchis
+      const amountPerGotchi = totalAmount / BigInt(count);
+
+      const withdrawals = selectedGotchiData.map((gotchi) => {
+        const balanceStr = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
+        const gotchiBalance = ethers.parseUnits(balanceStr, 18);
+        const withdrawAmount = amountPerGotchi < gotchiBalance ? amountPerGotchi : gotchiBalance;
         return {
           tokenId: BigInt(gotchi.tokenId),
-          amount: actualWithdrawAmount
+          amount: withdrawAmount,
         };
-      }));
+      });
+
+      const totalWithdrawAmount = withdrawals.reduce((sum, w) => sum + w.amount, BigInt(0));
+
+      if (totalWithdrawAmount < totalAmount) {
+        alert('Not enough balance in selected Aavegotchis to withdraw the total amount requested.');
+        // You can choose to throw an error or proceed with the available amount
+        return;
+      }
 
       console.log('Attempting batch withdrawal:');
-      withdrawals.forEach(w => console.log(`Aavegotchi ${w.tokenId}: ${ethers.formatUnits(w.amount, 18)}`));
+      withdrawals.forEach((w) => console.log(`Aavegotchi ${w.tokenId}: ${ethers.formatUnits(w.amount, 18)}`));
 
       await contract.batchTransferEscrow(
-        withdrawals.map(w => w.tokenId),
+        withdrawals.map((w) => w.tokenId),
         withdrawals.map(() => tokenAddress),
         withdrawals.map(() => userAddress),
-        withdrawals.map(w => w.amount)
+        withdrawals.map((w) => w.amount)
       );
 
       // Reset form and update balances
       setAmount('');
-      setSelectedGotchis([]);
-      await onWithdraw(tokenAddress, eligibleGotchis.map(g => g.tokenId), amount);
+      await onWithdraw(tokenAddress, selectedGotchis, amount);
     } catch (error) {
       console.error('Error during withdrawal:', error);
       if (error instanceof Error) {
@@ -133,94 +161,79 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ aavegotchis, onWithdraw
       } else {
         setErrorMessage('An unknown error occurred during withdrawal');
       }
-      
-      if (typeof error === 'object' && error !== null) {
-        if ('transaction' in error) {
-          console.log('Transaction details:', (error as { transaction: unknown }).transaction);
-        }
-        if ('error' in error) {
-          console.log('Error details:', (error as { error: unknown }).error);
-        }
-      }
     } finally {
       setIsWithdrawing(false);
     }
   };
 
-  // Helper function to distribute the total amount among multiple Aavegotchis
-  const distributeAmount = (totalAmount: bigint, count: number): bigint[] => {
-    const baseAmount = totalAmount / BigInt(count);
-    const remainder = totalAmount % BigInt(count);
-    return Array(count).fill(null).map((_, index) => 
-      index < Number(remainder) ? baseAmount + BigInt(1) : baseAmount
-    );
-  };
-
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       <h2>Withdraw</h2>
-      <label>
-        Select Aavegotchi(s):
-        <select
-          value={selectedGotchis.length > 1 ? 'all' : selectedGotchis[0] || ''}
-          onChange={handleGotchiSelection}
-          className={styles.select}
-        >
-          <option value="">Select an Aavegotchi</option>
-          <option value="all">All Owned Aavegotchi</option>
-          {ownedAavegotchis.map((gotchi) => (
-            <option key={gotchi.tokenId} value={gotchi.tokenId}>
-              {gotchi.name || `Aavegotchi #${gotchi.tokenId}`} (Balance: {formatNumberWithCommas(parseFloat(tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0').toFixed(4))} {currentTokenSymbol})
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Token:
-        <select
-          value={tokenOption}
-          onChange={handleTokenOptionChange}
-          className={styles.select}
-        >
-          <option value="GHST">GHST</option>
-          <option value="custom">Add your own token</option>
-        </select>
-      </label>
-      {tokenOption === 'custom' && (
+      <div className={styles.formGroup}>
         <label>
-          Custom Token Address:
-          <input
-            type="text"
-            value={customTokenAddress}
-            onChange={handleCustomTokenAddressChange}
-            placeholder="Enter token address"
-            className={styles.input}
-          />
+          Select Aavegotchi(s):
+          <select
+            value={selectedGotchis.length > 1 ? 'all' : selectedGotchis[0] || 'all'}
+            onChange={handleGotchiSelection}
+            className={styles.select}
+          >
+            <option value="all">All Owned Aavegotchi</option>
+            {ownedAavegotchis.map((gotchi) => (
+              <option key={gotchi.tokenId} value={gotchi.tokenId}>
+                {gotchi.name || `Aavegotchi #${gotchi.tokenId}`}
+              </option>
+            ))}
+          </select>
         </label>
-      )}
-      <label>
-        Amount:
-        <div className={styles.amountContainer}>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            min="0"
-            step="0.01"
-            required
-            className={styles.input}
-          />
-          <button type="button" onClick={handleMaxAmount} className={styles.maxButton}>
-            Max
-          </button>
+      </div>
+      <div className={styles.formGroup}>
+        <label>
+          Token:
+          <select value={tokenOption} onChange={handleTokenOptionChange} className={styles.select}>
+            <option value="GHST">GHST</option>
+            <option value="custom">Add your own token</option>
+          </select>
+        </label>
+      </div>
+      {tokenOption === 'custom' && (
+        <div className={styles.formGroup}>
+          <label>
+            Custom Token Address:
+            <input
+              type="text"
+              value={customTokenAddress}
+              onChange={handleCustomTokenAddressChange}
+              placeholder="Enter token address"
+              className={styles.input}
+            />
+          </label>
         </div>
-      </label>
+      )}
+      <div className={styles.formGroup}>
+        <label>
+          Amount:
+          <div className={styles.amountContainer}>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              min="0"
+              step="0.0001"
+              required
+              className={styles.input}
+            />
+            <button type="button" onClick={handleMaxAmount} className={styles.maxButton}>
+              Max
+            </button>
+          </div>
+        </label>
+      </div>
       <button type="submit" className={styles.submitButton} disabled={isWithdrawing}>
         {isWithdrawing ? 'Withdrawing...' : 'Withdraw'}
       </button>
+      {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
     </form>
   );
 };
-
 
 export default WithdrawalForm;

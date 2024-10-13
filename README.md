@@ -1,46 +1,45 @@
-# Getting Started with Create React App
+# Aavegotchi Banking Services
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+Aavegotchi Banking Services is a decentralized application (dApp) built on the Polygon network. It allows users to manage their Aavegotchi tokens, view balances, and withdraw tokens. The application interacts with the Ethereum blockchain to provide real-time data on token holdings.
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- **Wallet Connection**: Users can connect their Ethereum wallets (e.g., MetaMask).
+- **Aavegotchi Management**: View Aavegotchi tokens, including balances and ownership status.
+- **Custom Token Support**: Users can add custom tokens by entering their contract addresses.
+- **Responsive Design**: The application is designed for usability across various devices.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Technologies Used
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- **React**: Frontend framework for building the user interface.
+- **TypeScript**: Provides type safety and improves development experience.
+- **Ethers.js**: Library for interacting with the Ethereum blockchain.
+- **CSS Modules**: For modular and scoped styling.
+- **Polygon Network**: Layer 2 scaling solution for Ethereum.
 
-### `npm test`
+## Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+To run the project locally, clone the repository and install the dependencies. Use `npm start` to launch the development server.
 
-### `npm run build`
+## Usage
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Connect Wallet**: Users can connect their Ethereum wallet to interact with the dApp.
+- **View Aavegotchis**: Displays Aavegotchi tokens and their balances.
+- **Add Custom Token**: Allows users to manage custom tokens by entering contract addresses.
+- **Withdraw Tokens**: Users can select Aavegotchi(s) to withdraw tokens.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Contributing
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Contributions are welcome. To contribute, fork the repository, create a new branch, make changes, and submit a pull request.
 
-### `npm run eject`
+## License
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Acknowledgments
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- Aavegotchi team for their contributions to the DeFi space.
+- The Ethereum community for the tools and infrastructure for building decentralized applications.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).

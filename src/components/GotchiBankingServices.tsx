@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, ChangeEvent, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ethers } from 'ethers';
 import TopSection from './TopSection';
 import WithdrawalForm, { Aavegotchi, WithdrawalFormProps } from './WithdrawalForm';
@@ -7,9 +7,10 @@ import styles from './GotchiBankingServices.module.css';
 
 const POLYGON_CHAIN_ID = 137; // Polygon Mainnet
 
-type TokenImageMap = {
-  [key: string]: string;
-};
+interface TokenInfo {
+  symbol: string;
+  image: string;
+}
 
 const GotchiBankingServices: React.FC = () => {
   const [account, setAccount] = useState<string | null>(null);
@@ -20,30 +21,58 @@ const GotchiBankingServices: React.FC = () => {
   const [customTokenSymbol, setCustomTokenSymbol] = useState<string>('GHST');
   const [isCustomToken, setIsCustomToken] = useState(false);
   const [customTokenAddress, setCustomTokenAddress] = useState('');
-  const [tokenImage, setTokenImage] = useState('/images/default-token.png');
-  const [currentTokenSymbol, setCurrentTokenSymbol] = useState('GHST');
-  const [customTokenBalances, setCustomTokenBalances] = useState<{[key: string]: string}>({});
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo>({ symbol: 'GHST', image: '' });
+  const [customTokenBalances, setCustomTokenBalances] = useState<{ [key: string]: string }>({});
+  const [tokenOption, setTokenOption] = useState('GHST'); // Added to keep track of current token
 
-  const tokenImageMap: TokenImageMap = useMemo(() => ({
-    'GHST': 'https://coin-images.coingecko.com/coins/images/12467/small/GHST.png',
-    'GLTR': 'https://coin-images.coingecko.com/coins/images/25790/small/gltr-token.png'
-    // Add more token mappings as needed
-  }), []);
+  // Ref to prevent useEffect from running on initial render
+  const isFirstRender = useRef(true);
 
-  const fetchTokenImage = useCallback((tokenSymbol: string) => {
-    const upperCaseSymbol = tokenSymbol.toUpperCase();
-    if (upperCaseSymbol in tokenImageMap) {
-      setTokenImage(tokenImageMap[upperCaseSymbol]);
-    } else {
-      setTokenImage('/images/default-token.png');
+  const getTokenImageUrl = useCallback(async (contractAddress: string, platform: string = 'polygon-pos', imageSize: string = 'small') => {
+    try {
+      const response = await fetch(`https://api.coingecko.com/api/v3/coins/${platform}/contract/${contractAddress.toLowerCase()}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        const imageInfo = data.image || {};
+        return imageInfo[imageSize] || '/images/default-token.png';
+      } else if (response.status === 404) {
+        console.warn('Token not found. Using default image.');
+        return '/images/default-token.png';
+      } else {
+        console.error(`Error: Received status code ${response.status} from CoinGecko API.`);
+        return '/images/default-token.png';
+      }
+    } catch (error) {
+      console.error('An error occurred while fetching token image:', error);
+      return '/images/default-token.png';
     }
-    setCurrentTokenSymbol(upperCaseSymbol);
-  }, [tokenImageMap]);
+  }, []);
 
-  // Call fetchTokenImage when the component mounts to set the initial GHST image
+  const fetchTokenInfo = useCallback(
+    async (tokenAddress: string) => {
+      try {
+        const response = await fetch(`https://api.coingecko.com/api/v3/coins/polygon-pos/contract/${tokenAddress.toLowerCase()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch token info');
+        }
+        const data = await response.json();
+        const imageUrl = await getTokenImageUrl(tokenAddress);
+        setTokenInfo({
+          symbol: data.symbol.toUpperCase(),
+          image: imageUrl,
+        });
+      } catch (error) {
+        console.error('Error fetching token info:', error);
+        setTokenInfo({ symbol: 'Unknown', image: '/images/default-token.png' });
+      }
+    },
+    [getTokenImageUrl]
+  );
+
   useEffect(() => {
-    fetchTokenImage('GHST');
-  }, [fetchTokenImage]);
+    fetchTokenInfo(GHST_CONTRACT_ADDRESS);
+  }, [fetchTokenInfo]);
 
   const checkConnection = useCallback(async () => {
     if (window.ethereum) {
@@ -112,13 +141,15 @@ const GotchiBankingServices: React.FC = () => {
           try {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: `0x${POLYGON_CHAIN_ID.toString(16)}`,
-                chainName: 'Polygon Mainnet',
-                nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-                rpcUrls: ['https://polygon-rpc.com/'],
-                blockExplorerUrls: ['https://polygonscan.com/'],
-              }],
+              params: [
+                {
+                  chainId: `0x${POLYGON_CHAIN_ID.toString(16)}`,
+                  chainName: 'Polygon Mainnet',
+                  nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+                  rpcUrls: ['https://polygon-rpc.com/'],
+                  blockExplorerUrls: ['https://polygonscan.com/'],
+                },
+              ],
             });
           } catch (addError) {
             console.error('Error adding Polygon network:', addError);
@@ -133,7 +164,7 @@ const GotchiBankingServices: React.FC = () => {
   const fetchAavegotchis = async (address: string, contract: ethers.Contract) => {
     try {
       console.log('Fetching Aavegotchis for address:', address);
-      
+
       const balance = await contract.balanceOf(address);
       console.log('Balance:', balance.toString());
 
@@ -148,21 +179,22 @@ const GotchiBankingServices: React.FC = () => {
       const ghstContract = new ethers.Contract(GHST_CONTRACT_ADDRESS, ERC20_ABI, provider);
       const decimals = await ghstContract.decimals();
 
-      const aavegotchisData = await Promise.all(tokenIds.map(async (tokenId) => {
-        const aavegotchiInfo = await contract.getAavegotchi(tokenId);
-        const escrowAddress = aavegotchiInfo.escrow;
-        const escrowBalance = await ghstContract.balanceOf(escrowAddress);
-        const isLent = await contract.isAavegotchiLent(tokenId);
-        
-        return {
-          tokenId: tokenId,
-          name: aavegotchiInfo.name,
-          escrowWallet: escrowAddress,
-          ghstBalance: ethers.formatUnits(escrowBalance, decimals),
-          isLent: isLent
-        };
-      }));
+      const aavegotchisData = await Promise.all(
+        tokenIds.map(async (tokenId) => {
+          const aavegotchiInfo = await contract.getAavegotchi(tokenId);
+          const escrowAddress = aavegotchiInfo.escrow;
+          const escrowBalance = await ghstContract.balanceOf(escrowAddress);
+          const isLent = await contract.isAavegotchiLent(tokenId);
 
+          return {
+            tokenId: tokenId,
+            name: aavegotchiInfo.name,
+            escrowWallet: escrowAddress,
+            ghstBalance: ethers.formatUnits(escrowBalance, decimals),
+            isLent: isLent,
+          };
+        })
+      );
 
       console.log('Processed Aavegotchi Data:', aavegotchisData);
       setAavegotchis(aavegotchisData);
@@ -173,120 +205,171 @@ const GotchiBankingServices: React.FC = () => {
     }
   };
 
-  const handleCustomTokenChange = useCallback(async (tokenAddress: string) => {
-    if (!contract || !signer || !tokenAddress) {
-      return;
-    }
-
-    try {
-      console.log('Creating token contract instance for address:', tokenAddress);
-      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      
-      console.log('Fetching token symbol...');
-      let symbol: string;
-      try {
-        symbol = await tokenContract.symbol();
-      } catch (error) {
-        console.warn('Failed to fetch symbol, using address as symbol', error);
-        symbol = tokenAddress.slice(0, 6) + '...';
-      }
-      setCustomTokenSymbol(symbol);
-      fetchTokenImage(symbol);
-
-      console.log('Fetching token decimals...');
-      let decimals: number;
-      try {
-        decimals = await tokenContract.decimals();
-      } catch (error) {
-        console.warn('Failed to fetch decimals, using 18 as default', error);
-        decimals = 18;
-      }
-
-      console.log('Updating Aavegotchi balances...');
-      const newCustomTokenBalances: {[key: string]: string} = {};
-      await Promise.all(aavegotchis.map(async (gotchi) => {
-        let balance: ethers.BigNumberish;
-        try {
-          balance = await tokenContract.balanceOf(gotchi.escrowWallet);
-          newCustomTokenBalances[gotchi.tokenId] = ethers.formatUnits(balance, decimals);
-        } catch (error) {
-          console.warn(`Failed to fetch balance for Aavegotchi ${gotchi.tokenId}`, error);
-          newCustomTokenBalances[gotchi.tokenId] = '0';
+  const handleCustomTokenChange = useCallback(
+    async (tokenAddress: string) => {
+      if (!contract || !signer || !tokenAddress || !ethers.isAddress(tokenAddress)) {
+        // Invalid address, clear token info
+        setTokenInfo({ symbol: '', image: '' });
+        if (tokenOption !== 'GHST') {
+          setIsCustomToken(true);
+        } else {
+          setIsCustomToken(false);
         }
-      }));
+        return;
+      }
 
-      setCustomTokenBalances(newCustomTokenBalances);
-      setIsCustomToken(true);
+      if (tokenAddress.toLowerCase() === GHST_CONTRACT_ADDRESS.toLowerCase()) {
+        // GHST token
+        setIsCustomToken(false);
+        setTokenInfo({ symbol: 'GHST', image: '' });
+        // No need to fetch custom token balances
+        return;
+      }
 
-    } catch (error) {
-      console.error('Error fetching custom token balances:', error);
-      setCustomTokenSymbol('');
-      setTokenImage('/images/default-token.png');
-      setIsCustomToken(false);
-    }
-  }, [contract, signer, aavegotchis, fetchTokenImage]);
+      try {
+        await fetchTokenInfo(tokenAddress);
+        console.log('Creating token contract instance for address:', tokenAddress);
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
 
-  const handleWithdraw = useCallback(async (tokenAddress: string, selectedGotchis: string[], amount: string) => {
-    if (!contract || !signer) {
-      console.error('Contract or signer not initialized');
-      return;
-    }
+        console.log('Fetching token symbol...');
+        let symbol: string;
+        try {
+          symbol = await tokenContract.symbol();
+        } catch (error) {
+          console.warn('Failed to fetch symbol, using address as symbol', error);
+          symbol = tokenAddress.slice(0, 6) + '...';
+        }
+        setCustomTokenSymbol(symbol);
 
-    try {
-      // Refresh Aavegotchi data after withdrawal
-      await fetchAavegotchis(await signer.getAddress(), contract);
-      console.log(`Withdrawn ${amount} of token ${tokenAddress} from Aavegotchis:`, selectedGotchis);
-    } catch (error) {
-      console.error('Error during withdrawal:', error);
-    }
-  }, [contract, signer]);
+        console.log('Fetching token decimals...');
+        let decimals: number;
+        try {
+          decimals = await tokenContract.decimals();
+        } catch (error) {
+          console.warn('Failed to fetch decimals, using 18 as default', error);
+          decimals = 18;
+        }
 
-  const handleTokenSelection = useCallback((tokenOption: string) => {
-    if (tokenOption === 'GHST') {
-      setIsCustomToken(false);
-      fetchTokenImage('GHST');
-      setCustomTokenSymbol('GHST');
-    } else if (tokenOption === 'custom') {
-      setIsCustomToken(true);
-      // Don't change the image or symbol yet
-      // Just reset the custom token address if needed
-      setCustomTokenAddress('');
-    }
-  }, [fetchTokenImage]);
+        console.log('Updating Aavegotchi balances...');
+        const newCustomTokenBalances: { [key: string]: string } = {};
+        await Promise.all(
+          aavegotchis.map(async (gotchi) => {
+            let balance: ethers.BigNumberish;
+            try {
+              balance = await tokenContract.balanceOf(gotchi.escrowWallet);
+              newCustomTokenBalances[gotchi.tokenId] = ethers.formatUnits(balance, decimals);
+            } catch (error) {
+              console.warn(`Failed to fetch balance for Aavegotchi ${gotchi.tokenId}`, error);
+              newCustomTokenBalances[gotchi.tokenId] = '0';
+            }
+          })
+        );
+
+        setCustomTokenBalances(newCustomTokenBalances);
+        setIsCustomToken(true);
+      } catch (error) {
+        console.error('Error fetching custom token info:', error);
+        setCustomTokenSymbol('');
+        setTokenInfo({ symbol: '', image: '' }); // Clear token info
+        setIsCustomToken(false);
+      }
+    },
+    [contract, signer, aavegotchis, fetchTokenInfo, tokenOption]
+  );
+
+  const handleCustomTokenInvalid = useCallback(() => {
+    // Clear token info when the address is invalid
+    setTokenInfo({ symbol: '', image: '' });
+    setIsCustomToken(false);
+  }, []);
+
+  const handleWithdraw = useCallback(
+    async (tokenAddress: string, selectedGotchis: string[], amount: string) => {
+      if (!contract || !signer) {
+        console.error('Contract or signer not initialized');
+        return;
+      }
+
+      try {
+        // Refresh Aavegotchi data after withdrawal
+        await fetchAavegotchis(await signer.getAddress(), contract);
+        console.log(`Withdrawn ${amount} of token ${tokenAddress} from Aavegotchis:`, selectedGotchis);
+      } catch (error) {
+        console.error('Error during withdrawal:', error);
+      }
+    },
+    [contract, signer]
+  );
+
+  const handleTokenSelection = useCallback(
+    (selectedTokenOption: string) => {
+      setTokenOption(selectedTokenOption); // Update the token option
+      if (selectedTokenOption === 'GHST') {
+        setIsCustomToken(false);
+        setCustomTokenAddress(GHST_CONTRACT_ADDRESS);
+        setTokenInfo({ symbol: 'GHST', image: '' });
+        handleCustomTokenChange(GHST_CONTRACT_ADDRESS);
+      } else if (selectedTokenOption === 'custom') {
+        setIsCustomToken(true);
+        setCustomTokenAddress('');
+        setTokenInfo({ symbol: '', image: '' }); // Clear token info
+      }
+    },
+    [handleCustomTokenChange]
+  );
 
   const withdrawalFormProps: WithdrawalFormProps = {
     aavegotchis,
     onWithdraw: handleWithdraw,
     onCustomTokenChange: handleCustomTokenChange,
     signer,
-    onTokenSelection: handleTokenSelection
+    onTokenSelection: handleTokenSelection,
+    tokenSymbol: tokenInfo.symbol,
+    onCustomTokenInvalid: handleCustomTokenInvalid,
   };
 
-  // Update this useEffect to handle both GHST and custom token balances
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     if (contract && signer) {
       const fetchBalances = async () => {
-        const updatedAavegotchis = await Promise.all(aavegotchis.map(async (gotchi) => {
-          let ghstBalance: string;
-          try {
-            const balance = await contract.balanceOf(gotchi.escrowWallet);
-            ghstBalance = ethers.formatEther(balance);
-          } catch (error) {
-            console.warn(`Failed to fetch GHST balance for Aavegotchi ${gotchi.tokenId}`, error);
-            ghstBalance = '0';
-          }
-          return {
-            ...gotchi,
-            ghstBalance,
-            customTokenBalance: customTokenBalances[gotchi.tokenId] || '0'
-          };
-        }));
+        const updatedAavegotchis = await Promise.all(
+          aavegotchis.map(async (gotchi) => {
+            let ghstBalance: string = gotchi.ghstBalance;
+            let customTokenBalance: string = gotchi.customTokenBalance || '0';
+
+            if (tokenOption === 'GHST' || !isCustomToken) {
+              // Fetch GHST balances
+              try {
+                const ghstContract = new ethers.Contract(GHST_CONTRACT_ADDRESS, ERC20_ABI, signer);
+                const balance = await ghstContract.balanceOf(gotchi.escrowWallet);
+                ghstBalance = ethers.formatUnits(balance, 18);
+              } catch (error) {
+                console.warn(`Failed to fetch GHST balance for Aavegotchi ${gotchi.tokenId}`, error);
+                ghstBalance = '0';
+              }
+            } else {
+              // Fetch custom token balances
+              customTokenBalance = customTokenBalances[gotchi.tokenId] || '0';
+            }
+
+            return {
+              ...gotchi,
+              ghstBalance,
+              customTokenBalance,
+            };
+          })
+        );
         setAavegotchis(updatedAavegotchis);
       };
 
       fetchBalances();
     }
-  }, [contract, signer, customTokenBalances]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract, signer, customTokenBalances, isCustomToken, tokenOption]);
 
   if (!account) {
     return (
@@ -316,15 +399,11 @@ const GotchiBankingServices: React.FC = () => {
         walletAddress={account}
         onConnectWallet={connectWallet}
         aavegotchis={aavegotchis}
-        customTokenSymbol={isCustomToken ? customTokenSymbol : 'GHST'}
+        customTokenSymbol={tokenInfo.symbol}
         isCustomToken={isCustomToken}
-        tokenImage={tokenImage}
+        tokenImage={tokenInfo.image}
       />
-      <WithdrawalForm 
-        {...withdrawalFormProps} 
-        onTokenSelection={handleTokenSelection}
-        onCustomTokenChange={handleCustomTokenChange}
-      />
+      <WithdrawalForm {...withdrawalFormProps} />
     </div>
   );
 };

@@ -23,7 +23,8 @@ const GotchiBankingServices: React.FC = () => {
   const [customTokenAddress, setCustomTokenAddress] = useState('');
   const [tokenInfo, setTokenInfo] = useState<TokenInfo>({ symbol: 'GHST', image: '' });
   const [customTokenBalances, setCustomTokenBalances] = useState<{ [key: string]: string }>({});
-  const [tokenOption, setTokenOption] = useState('GHST'); // Added to keep track of current token
+  const [tokenOption, setTokenOption] = useState('GHST');
+  const [tokenDecimals, setTokenDecimals] = useState<number>(18); // Added tokenDecimals state
 
   // Ref to prevent useEffect from running on initial render
   const isFirstRender = useRef(true);
@@ -58,6 +59,20 @@ const GotchiBankingServices: React.FC = () => {
         }
         const data = await response.json();
         const imageUrl = await getTokenImageUrl(tokenAddress);
+
+        // Create a provider or signer for fetching token decimals
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer || provider);
+
+        let decimals: number;
+        try {
+          decimals = await tokenContract.decimals();
+        } catch (error) {
+          console.warn('Failed to fetch decimals, using 18 as default', error);
+          decimals = 18;
+        }
+        setTokenDecimals(decimals); // Set the token decimals
+
         setTokenInfo({
           symbol: data.symbol.toUpperCase(),
           image: imageUrl,
@@ -65,9 +80,10 @@ const GotchiBankingServices: React.FC = () => {
       } catch (error) {
         console.error('Error fetching token info:', error);
         setTokenInfo({ symbol: 'Unknown', image: '/images/default-token.png' });
+        setTokenDecimals(18); // Default to 18 decimals
       }
     },
-    [getTokenImageUrl]
+    [getTokenImageUrl, signer]
   );
 
   useEffect(() => {
@@ -222,6 +238,7 @@ const GotchiBankingServices: React.FC = () => {
         // GHST token
         setIsCustomToken(false);
         setTokenInfo({ symbol: 'GHST', image: '' });
+        setTokenDecimals(18); // Set decimals to 18 for GHST
         // No need to fetch custom token balances
         return;
       }
@@ -249,6 +266,7 @@ const GotchiBankingServices: React.FC = () => {
           console.warn('Failed to fetch decimals, using 18 as default', error);
           decimals = 18;
         }
+        setTokenDecimals(decimals); // Set the token decimals
 
         console.log('Updating Aavegotchi balances...');
         const newCustomTokenBalances: { [key: string]: string } = {};
@@ -272,6 +290,7 @@ const GotchiBankingServices: React.FC = () => {
         setCustomTokenSymbol('');
         setTokenInfo({ symbol: '', image: '' }); // Clear token info
         setIsCustomToken(false);
+        setTokenDecimals(18); // Default to 18 decimals
       }
     },
     [contract, signer, aavegotchis, fetchTokenInfo, tokenOption]
@@ -281,6 +300,7 @@ const GotchiBankingServices: React.FC = () => {
     // Clear token info when the address is invalid
     setTokenInfo({ symbol: '', image: '' });
     setIsCustomToken(false);
+    setTokenDecimals(18); // Reset to default decimals
   }, []);
 
   const handleWithdraw = useCallback(
@@ -308,6 +328,7 @@ const GotchiBankingServices: React.FC = () => {
         setIsCustomToken(false);
         setCustomTokenAddress(GHST_CONTRACT_ADDRESS);
         setTokenInfo({ symbol: 'GHST', image: '' });
+        setTokenDecimals(18); // Set decimals to 18 for GHST
         handleCustomTokenChange(GHST_CONTRACT_ADDRESS);
       } else if (selectedTokenOption === 'custom') {
         setIsCustomToken(true);
@@ -326,6 +347,7 @@ const GotchiBankingServices: React.FC = () => {
     onTokenSelection: handleTokenSelection,
     tokenSymbol: tokenInfo.symbol,
     onCustomTokenInvalid: handleCustomTokenInvalid,
+    tokenDecimals, // Pass tokenDecimals to WithdrawalForm
   };
 
   useEffect(() => {

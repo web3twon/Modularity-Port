@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { ethers } from 'ethers';
 import styles from './WithdrawalForm.module.css';
-import { CONTRACT_ADDRESS, DIAMOND_ABI, ERC20_ABI } from './constants';
+import { CONTRACT_ADDRESS, DIAMOND_ABI } from './constants';
 
 export interface Aavegotchi {
   tokenId: string;
@@ -20,6 +20,7 @@ export interface WithdrawalFormProps {
   onTokenSelection: (tokenOption: string) => void;
   tokenSymbol: string;
   onCustomTokenInvalid: () => void;
+  tokenDecimals: number; // Added tokenDecimals prop
 }
 
 const GHST_ADDRESS = '0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7';
@@ -32,6 +33,7 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
   onTokenSelection,
   tokenSymbol,
   onCustomTokenInvalid,
+  tokenDecimals, // Destructure tokenDecimals
 }) => {
   const [selectedGotchis, setSelectedGotchis] = useState<string[]>([]);
   const [tokenOption, setTokenOption] = useState('GHST');
@@ -89,10 +91,10 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
 
     totalBalance = selectedGotchiData.reduce((sum, gotchi) => {
       const balance = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
-      return sum + BigInt(ethers.parseUnits(balance, 18));
+      return sum + ethers.parseUnits(balance, tokenDecimals);
     }, BigInt(0));
 
-    const formattedBalance = ethers.formatUnits(totalBalance, 18);
+    const formattedBalance = ethers.formatUnits(totalBalance, tokenDecimals);
     setAmount(formattedBalance);
     console.log(`Max amount set: ${formattedBalance} for ${selectedGotchis.length} Aavegotchi(s)`);
   };
@@ -113,35 +115,69 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
       const userAddress = await signer.getAddress();
 
       const selectedGotchiData = ownedAavegotchis.filter((gotchi) => selectedGotchis.includes(gotchi.tokenId));
-      const totalAmount = ethers.parseUnits(amount, 18);
+      const totalAmount = ethers.parseUnits(amount, tokenDecimals);
       const count = selectedGotchiData.length;
       if (count === 0) {
         throw new Error('No Aavegotchis selected');
       }
 
-      // Distribute the total amount among selected gotchis
-      const amountPerGotchi = totalAmount / BigInt(count);
-
-      const withdrawals = selectedGotchiData.map((gotchi) => {
+      // Calculate total available balance
+      const totalAvailableBalance = selectedGotchiData.reduce((sum, gotchi) => {
         const balanceStr = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
-        const gotchiBalance = ethers.parseUnits(balanceStr, 18);
-        const withdrawAmount = amountPerGotchi < gotchiBalance ? amountPerGotchi : gotchiBalance;
-        return {
-          tokenId: BigInt(gotchi.tokenId),
-          amount: withdrawAmount,
-        };
-      });
+        const gotchiBalance = ethers.parseUnits(balanceStr, tokenDecimals);
+        return sum + gotchiBalance;
+      }, BigInt(0));
 
+      if (totalAmount > totalAvailableBalance) {
+        alert('Not enough balance in selected Aavegotchis to withdraw the total amount requested.');
+        return;
+      }
+
+      let withdrawals: { tokenId: bigint; amount: bigint }[] = [];
+
+      if (totalAmount === totalAvailableBalance) {
+        // Withdraw full balances from each gotchi
+        withdrawals = selectedGotchiData.map((gotchi) => {
+          const balanceStr = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
+          const gotchiBalance = ethers.parseUnits(balanceStr, tokenDecimals);
+          return {
+            tokenId: BigInt(gotchi.tokenId),
+            amount: gotchiBalance,
+          };
+        });
+      } else {
+        // Distribute amount evenly with proper handling
+        const amountPerGotchi = totalAmount / BigInt(count);
+        let remainder = totalAmount % BigInt(count);
+
+        withdrawals = selectedGotchiData.map((gotchi, index) => {
+          const balanceStr = tokenOption === 'GHST' ? gotchi.ghstBalance : gotchi.customTokenBalance || '0';
+          const gotchiBalance = ethers.parseUnits(balanceStr, tokenDecimals);
+          let withdrawAmount = amountPerGotchi;
+          if (remainder > BigInt(0)) {
+            withdrawAmount += BigInt(1); // Add 1 unit to handle remainder
+            remainder -= BigInt(1);
+          }
+          withdrawAmount = withdrawAmount < gotchiBalance ? withdrawAmount : gotchiBalance;
+          return {
+            tokenId: BigInt(gotchi.tokenId),
+            amount: withdrawAmount,
+          };
+        });
+      }
+
+      // Now sum up withdrawals
       const totalWithdrawAmount = withdrawals.reduce((sum, w) => sum + w.amount, BigInt(0));
 
       if (totalWithdrawAmount < totalAmount) {
         alert('Not enough balance in selected Aavegotchis to withdraw the total amount requested.');
-        // You can choose to throw an error or proceed with the available amount
         return;
       }
 
       console.log('Attempting batch withdrawal:');
-      withdrawals.forEach((w) => console.log(`Aavegotchi ${w.tokenId}: ${ethers.formatUnits(w.amount, 18)}`));
+      withdrawals.forEach((w) =>
+        console.log(`Aavegotchi ${w.tokenId}: ${ethers.formatUnits(w.amount, tokenDecimals)}`)
+      );
 
       await contract.batchTransferEscrow(
         withdrawals.map((w) => w.tokenId),
@@ -157,9 +193,10 @@ const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
       console.error('Error during withdrawal:', error);
       if (error instanceof Error) {
         console.log('Error message:', error.message);
-        setErrorMessage(error.message);
+        // Only set a user-friendly message to the UI
+        setErrorMessage('Transaction was cancelled or failed. Please try again.');
       } else {
-        setErrorMessage('An unknown error occurred during withdrawal');
+        setErrorMessage('An unknown error occurred during withdrawal. Please try again.');
       }
     } finally {
       setIsWithdrawing(false);
